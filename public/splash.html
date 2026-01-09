@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to FoxShoot</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #0F0F0F; /* Match app background */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    img {
+      max-width: 100%;
+      max-height: 100%;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      animation: fadeIn 0.5s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <img src="splash-screen-fox-shoot.png" alt="FoxShoot Loading..." />
+  <script>
+    // Close splash after 2 seconds and verify main window is ready
+    // Note: requires logic in main app to close this, typically automated via Rust code
+    // For this implementation without Rust edits, this serves as the content.
+  </script>
+</body>
+</html>

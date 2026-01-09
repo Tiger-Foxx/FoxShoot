@@ -1,0 +1,44 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "FoxShoot",
+  "version": "0.1.0",
+  "identifier": "com.foxshoot.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:3000",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Fox-Shoot : improve your vision",
+        "label": "main",
+        "width": 1024,
+        "height": 768,
+        "resizable": true,
+        "fullscreen": false,
+        "minWidth": 800,
+        "minHeight": 600,
+        "visible": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "../public/logo-fox-shoot-32x32.png",
+      "../public/logo-fox-shoot-128x128.png",
+      "../public/logo-fox-shoot.png",
+      "../public/icon.ico"
+    ],
+    "resources": [
+      "../public/splash-screen-fox-shoot.png",
+      "../public/logo-fox-shoot.png"
+    ]
+  }
+}
