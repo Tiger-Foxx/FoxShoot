@@ -1,13 +1,12 @@
 import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { CloudArrowUpIcon, FilmIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import { PlusIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
 
 export const UploadZone = ({ onDropFiles }) => {
   const onDrop = useCallback(acceptedFiles => {
     if (acceptedFiles?.length) {
-      // Map to simpler objects
       const mapped = acceptedFiles.map(f => ({
         file: f,
         path: f.path || f.name, 
@@ -23,30 +22,28 @@ export const UploadZone = ({ onDropFiles }) => {
   return (
     <motion.div
       {...getRootProps()}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
       className={clsx(
-        "border-2 border-dashed rounded-lg p-10 flex flex-col items-center justify-center cursor-pointer transition-colors duration-200 h-64",
+        "group h-32 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 relative overflow-hidden",
         isDragActive 
-          ? "border-primary bg-primary/10" 
-          : "border-gray-700 hover:border-primary/50 hover:bg-surface/50"
+          ? "border-primary bg-primary/5" 
+          : "border-white/10 hover:border-primary/40 hover:bg-white/5 shadow-inner"
       )}
     >
       <input {...getInputProps()} />
-      <div className="bg-surface p-4 rounded-full mb-4">
-        <CloudArrowUpIcon className={clsx("w-10 h-10", isDragActive ? "text-primary" : "text-gray-400")} />
+      
+      {/* Background Glow */}
+      <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-colors duration-500" />
+      
+      <div className="relative z-10 flex flex-col items-center gap-2">
+        <div className="p-2 bg-white/5 rounded-full border border-white/10 group-hover:border-primary/50 transition-colors">
+           <PlusIcon className={clsx("w-5 h-5", isDragActive ? "text-primary" : "text-gray-500")} />
+        </div>
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 group-hover:text-primary transition-colors">
+          Inject Media
+        </p>
       </div>
-      <p className="text-lg font-medium text-gray-200">
-        {isDragActive ? "Drop files here..." : "Drag & Drop files"}
-      </p>
-      <p className="text-sm text-gray-500 mt-2 text-center">
-        Support Images (PNG, JPG, WEBP) & Anime Videos (MP4, MKV)<br/>
-        <span className="flex items-center justify-center gap-2 mt-2">
-          <PhotoIcon className="w-4 h-4" /> Batch Images
-          <span className="text-gray-700">|</span>
-          <FilmIcon className="w-4 h-4" /> Anime Episodes
-        </span>
-      </p>
     </motion.div>
   );
 };

@@ -1,4 +1,4 @@
-import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
+import { AdjustmentsHorizontalIcon, CpuChipIcon, BoltIcon, Square2StackIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
 export const OptionsPanel = ({ options, setOptions, disabled }) => {
@@ -7,109 +7,125 @@ export const OptionsPanel = ({ options, setOptions, disabled }) => {
   };
 
   return (
-    <div className="bg-surface rounded-lg p-4 border border-gray-800">
-      <div className="flex items-center gap-2 mb-4 text-gray-300 border-b border-gray-800 pb-2">
-        <AdjustmentsHorizontalIcon className="w-5 h-5 text-primary" />
-        <h3 className="font-semibold text-sm uppercase tracking-wider">Engine Config</h3>
+    <div className="flex flex-col gap-10">
+      <div className="text-center">
+        <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Engine Setup</h2>
+        <p className="text-gray-500 text-sm">Fine-tune the upscaling neural network parameters.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Scale */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500 font-medium ml-1">Scale Factor</label>
-          <div className="flex bg-background rounded-md p-1 border border-gray-700">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+        
+        {/* SCALE FACTOR */}
+        <div className="space-y-4">
+          <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
+            <Square2StackIcon className="w-4 h-4" /> Multiplier
+          </label>
+          <div className="grid grid-cols-3 gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/5">
             {[2, 3, 4].map(s => (
               <button
                 key={s}
                 onClick={() => handleChange('scale', s)}
                 disabled={disabled}
                 className={clsx(
-                  "flex-1 text-sm py-1 rounded transition-colors",
+                  "py-3 rounded-xl text-sm font-bold transition-all",
                   options.scale === s 
-                    ? "bg-primary text-white font-medium shadow-sm" 
-                    : "text-gray-400 hover:text-white"
+                    ? "bg-primary text-white shadow-xl glow-primary" 
+                    : "text-gray-500 hover:text-white"
                 )}
               >
-                x{s}
+                {s}x
               </button>
             ))}
           </div>
         </div>
 
-        {/* Quality */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500 font-medium ml-1">Video Quality</label>
-          <select 
-            value={options.quality}
-            onChange={(e) => handleChange('quality', e.target.value)}
-            disabled={disabled}
-            className="bg-background border border-gray-700 text-gray-300 text-sm rounded-md p-1.5 focus:border-primary focus:outline-none"
-          >
-            <option value="low">Low (Fast)</option>
-            <option value="medium">Medium (Balanced)</option>
-            <option value="high">High (Best)</option>
-          </select>
+        {/* SPEED PRESET */}
+        <div className="space-y-4">
+          <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
+            <BoltIcon className="w-4 h-4" /> Velocity
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {['fast', 'medium', 'slow', 'ultrafast'].map(p => (
+              <button
+                key={p}
+                onClick={() => handleChange('preset', p)}
+                disabled={disabled}
+                className={clsx(
+                  "py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all",
+                  options.preset === p 
+                    ? "border-primary bg-primary/10 text-primary" 
+                    : "border-white/5 bg-white/5 text-gray-500 hover:border-white/20 hover:text-white"
+                )}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Format */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500 font-medium ml-1">Output Format</label>
-          <select 
-            value={options.format}
-            onChange={(e) => handleChange('format', e.target.value)}
-            disabled={disabled}
-            className="bg-background border border-gray-700 text-gray-300 text-sm rounded-md p-1.5 focus:border-primary focus:outline-none"
-          >
-            <option value="mp4">MP4 (H.264)</option>
-            <option value="mkv">MKV</option>
-            <option value="webm">WebM</option>
-          </select>
-        </div>
-
-        {/* Speed Preset (Backend Option) */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500 font-medium ml-1">Encoding Speed</label>
-          <select 
-            value={options.preset}
-            onChange={(e) => handleChange('preset', e.target.value)}
-            disabled={disabled}
-            className="bg-background border border-gray-700 text-gray-300 text-sm rounded-md p-1.5 focus:border-primary focus:outline-none"
-          >
-            <option value="medium">Medium (Def)</option>
-            <option value="fast">Fast</option>
-            <option value="ultrafast">Ultrafast (Low Comp)</option>
-            <option value="slow">Slow (Best Comp)</option>
-          </select>
-        </div>
-
-        {/* Tile Size (Backend Option for Low VRAM) */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500 font-medium ml-1">VRAM Tiling</label>
+        {/* VRAM TILING */}
+        <div className="space-y-4">
+          <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
+            <CpuChipIcon className="w-4 h-4" /> Memory Tiling
+          </label>
           <select 
             value={options.tileSize}
             onChange={(e) => handleChange('tileSize', parseInt(e.target.value))}
             disabled={disabled}
-            className="bg-background border border-gray-700 text-gray-300 text-sm rounded-md p-1.5 focus:border-primary focus:outline-none"
+            className="w-full bg-white/5 border border-white/10 text-white text-sm rounded-xl p-4 focus:border-primary focus:outline-none appearance-none cursor-pointer hover:bg-white/10 transition-colors"
           >
-            <option value={0}>Auto (Default)</option>
-            <option value={400}>400 (6GB+ VRAM)</option>
-            <option value={256}>256 (4GB VRAM)</option>
-            <option value={128}>128 (2GB VRAM)</option>
+            <option value={0} className="bg-background">Auto Control (Smart)</option>
+            <option value={400} className="bg-background">400 (Heavy VRAM)</option>
+            <option value={256} className="bg-background">256 (Balanced)</option>
+            <option value={128} className="bg-background">128 (Safe Mode)</option>
           </select>
         </div>
-        
-         {/* Audio */}
-         <div className="flex items-center gap-2 mt-5">
-           <input 
-             type="checkbox"
-             id="audio"
-             checked={!options.noAudio} 
-             onChange={(e) => handleChange('noAudio', !e.target.checked)}
-             disabled={disabled}
-             className="w-4 h-4 rounded border-gray-700 bg-background text-primary focus:ring-primary focus:ring-1"
-           />
-           <label htmlFor="audio" className="text-sm text-gray-300 cursor-pointer select-none">Keep Audio</label>
-         </div>
+
+        {/* ENCODING */}
+        <div className="space-y-4">
+          <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
+            <AdjustmentsHorizontalIcon className="w-4 h-4" /> Output Format
+          </label>
+          <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5 gap-2">
+            {['mp4', 'mkv', 'webm'].map(f => (
+              <button
+                key={f}
+                onClick={() => handleChange('format', f)}
+                disabled={disabled}
+                className={clsx(
+                  "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                  options.format === f 
+                    ? "bg-white text-black font-bold" 
+                    : "text-gray-500 hover:text-white"
+                )}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
+
+      </div>
+
+      <div className="mt-6 flex justify-center">
+         <label className="flex items-center gap-4 cursor-pointer group">
+           <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 px-4 py-2 border border-white/5 rounded-full group-hover:border-primary/30 transition-colors">Audio Handling</span>
+           <div 
+             onClick={() => !disabled && handleChange('noAudio', !options.noAudio)}
+             className={clsx(
+               "w-12 h-6 rounded-full p-1 transition-all duration-300",
+               !options.noAudio ? "bg-primary" : "bg-white/10"
+             )}
+           >
+             <div className={clsx(
+               "w-4 h-4 bg-white rounded-full transition-transform duration-300",
+               !options.noAudio ? "translate-x-6" : "translate-x-0"
+             )} />
+           </div>
+           <span className={clsx("text-xs font-bold transition-colors", !options.noAudio ? "text-white" : "text-gray-600")}>
+             {!options.noAudio ? "Preserve Streams" : "Discard Audio"}
+           </span>
+         </label>
       </div>
     </div>
   );

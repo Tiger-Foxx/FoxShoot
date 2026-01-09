@@ -1,68 +1,67 @@
-import { TrashIcon, CheckCircleIcon, XCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { TrashIcon, CheckCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { ArrowPathIcon } from '@heroicons/react/24/solid';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const BatchList = ({ files, onRemove, currentFileIndex, processing }) => {
-  if (files.length === 0) return null;
+  if (files.length === 0) return (
+    <div className="flex-1 flex flex-col items-center justify-center text-center p-8 opacity-20">
+       <div className="w-12 h-12 border border-dashed border-white rounded-full mb-4 flex items-center justify-center">
+          <ClockIcon className="w-6 h-6" />
+       </div>
+       <p className="text-[10px] uppercase font-black tracking-widest">No signals detected</p>
+    </div>
+  );
 
   return (
-    <div className="bg-surface rounded-lg border border-gray-800 flex flex-col h-full max-h-[400px]">
-      <div className="p-3 border-b border-gray-800 bg-surface/50 sticky top-0 backdrop-blur-sm z-10 flex justify-between items-center">
-        <h3 className="text-sm font-medium text-gray-300">Queue ({files.length})</h3>
-        {files.length > 0 && !processing && (
-          <button onClick={() => onRemove('all')} className="text-xs text-red-400 hover:text-red-300">
-            Clear All
-          </button>
-        )}
-      </div>
-      
-      <div className="overflow-y-auto p-2 space-y-1 custom-scrollbar flex-1">
-        <AnimatePresence initial={false}>
-          {files.map((file, index) => {
-            const isCurrent = processing && index === currentFileIndex;
-            const isDone = index < currentFileIndex;
-            const isPending = index > currentFileIndex;
-            
-            return (
-              <motion.div
-                key={file.name + index} // Use unique ID in real app
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, height: 0 }}
-                className={clsx(
-                  "flex items-center gap-3 p-2 rounded-md text-sm transition-colors border",
-                  isCurrent 
-                    ? "bg-primary/10 border-primary/30 text-white" 
-                    : "bg-background border-transparent text-gray-400 hover:bg-gray-800"
-                )}
-              >
-                {/* Status Icon */}
-                <div className="shrink-0">
-                  {isCurrent && <ArrowPathIcon className="w-4 h-4 animate-spin text-primary" />}
-                  {isDone && <CheckCircleIcon className="w-4 h-4 text-green-500" />}
-                  {isPending && !processing && <ClockIcon className="w-4 h-4 text-gray-600" />}
-                  {isPending && processing && <ClockIcon className="w-4 h-4 text-gray-600" />}
+    <div className="flex flex-col gap-2 overflow-y-auto pr-2 custom-scrollbar">
+      <AnimatePresence initial={false}>
+        {files.map((file, index) => {
+          const isCurrent = processing && index === currentFileIndex;
+          const isDone = index < currentFileIndex;
+          
+          return (
+            <motion.div
+              key={file.name + index}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className={clsx(
+                "group flex flex-col p-4 rounded-2xl border transition-all duration-300",
+                isCurrent 
+                  ? "bg-primary/10 border-primary/30 shadow-lg shadow-primary/5" 
+                  : "bg-white/3 border-white/5 hover:border-white/10"
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <div className="shrink-0 mt-0.5">
+                  {isCurrent && <ArrowPathIcon className="w-3 h-3 animate-spin text-primary" />}
+                  {isDone && <CheckCircleIcon className="w-3 h-3 text-green-500" />}
+                  {!isCurrent && !isDone && <div className="w-3 h-3 rounded-full border border-white/20" />}
                 </div>
 
-                <div className="flex-1 truncate">
-                  <span className="truncate block">{file.name}</span>
-                  {isCurrent && <span className="text-[10px] text-primary/80 uppercase font-bold">Processing</span>}
+                <div className="flex-1 min-w-0">
+                  <span className={clsx(
+                    "text-[11px] font-bold block truncate",
+                    isCurrent ? "text-white" : "text-gray-400"
+                  )}>
+                    {file.name}
+                  </span>
                 </div>
 
                 {!processing && (
                   <button 
                     onClick={() => onRemove(index)}
-                    className="p-1 hover:bg-red-500/20 rounded text-gray-600 hover:text-red-400"
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded-md text-gray-500 hover:text-red-400 transition-all"
                   >
-                    <TrashIcon className="w-4 h-4" />
+                    <TrashIcon className="w-3 h-3" />
                   </button>
                 )}
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-      </div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
     </div>
   );
 };

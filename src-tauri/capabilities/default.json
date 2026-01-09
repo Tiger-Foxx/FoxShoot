@@ -18,8 +18,6 @@
         }
       ]
     },
-    "fs:allow-read-recursive",
-    "fs:allow-write-recursive",
     "fs:default"
   ]
 }

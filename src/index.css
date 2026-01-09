@@ -1,19 +1,66 @@
 @import "tailwindcss";
 
-@layer base {
-  body {
-    @apply bg-background text-text font-sans antialiased;
-  }
+@theme {
+  --color-primary: #f97316;
+  --color-primary-glow: rgba(249, 115, 22, 0.2);
+  --color-background: #050505;
+  --color-surface: #121212;
+  --color-surface-bright: #1c1c1c;
+  --color-border: #262626;
+  --color-text-muted: #737373;
   
-  /* Custom Scrollbar for "Pro" feel */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  ::-webkit-scrollbar-track {
-    @apply bg-background;
-  }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-surface rounded hover:bg-primary/50 transition-colors;
-  }
+  --font-sans: 'Inter Tight', 'Inter', system-ui, sans-serif;
+}
+
+/* Global Immersive Style */
+body {
+  background-color: var(--color-background);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(15, 15, 15, 0.7);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--color-border);
+}
+
+/* Portal Mesh Background */
+.mesh-bg {
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(249, 115, 22, 0.05) 0px, transparent 50%);
+}
+
+.glow-hover:hover {
+  box-shadow: 0 0 30px rgba(249, 115, 22, 0.1);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+/* Animations */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+.animate-pulse-slow {
+  animation: pulse-slow 4s infinite;
 }

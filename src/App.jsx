@@ -1,21 +1,38 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Toaster } from 'react-hot-toast';
-import { UploadZone } from './components/UploadZone';
-import { BatchList } from './components/BatchList';
-import { OptionsPanel } from './components/OptionsPanel';
-import { ProgressBar } from './components/ProgressBar';
-import { PreviewCard } from './components/PreviewCard';
-import { ToastContainer } from './components/ToastContainer';
-import { useUpscaleCLI } from './hooks/useUpscaleCLI';
-import { getFileType } from './utils/fileUtils';
-import { convertFileSrc } from '@tauri-apps/api/core';
+import { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Square3Stack3DIcon, 
+  Cog6ToothIcon, 
+  PhotoIcon, 
+  FilmIcon, 
+  PlayIcon, 
+  StopIcon,
+  QueueListIcon,
+  SparklesIcon,
+  ChevronRightIcon
+} from '@heroicons/react/24/outline';
+import { convertFileSrc } from '@tauri-apps/api/core';
 import clsx from 'clsx';
 
+// Components
+import { UploadZone } from './components/UploadZone';
+import { ProgressBar } from './components/ProgressBar';
+import { OptionsPanel } from './components/OptionsPanel';
+import { BatchList } from './components/BatchList';
+import { PreviewCard } from './components/PreviewCard';
+import { ToastContainer } from './components/ToastContainer';
+
+// Hooks/Utils
+import { useUpscaleCLI } from './hooks/useUpscaleCLI';
+import { getFileType } from './utils/fileUtils';
+
 function App() {
+  const [activeTab, setActiveTab ] = useState('upscale'); // 'upscale', 'engine'
   const [files, setFiles] = useState([]);
-  const [processedFiles, setProcessedFiles] = useState({}); // { index: path }
+  const [processedFiles, setProcessedFiles] = useState({});
   const [currentFileIndex, setCurrentFileIndex] = useState(-1);
+  const [showQueue, setShowQueue] = useState(true);
+  
   const [options, setOptions] = useState({
     scale: 2,
     quality: 'medium',
@@ -27,13 +44,10 @@ function App() {
 
   const { runUpscale, cancelUpscale, processing, progress } = useUpscaleCLI();
 
-  // Handle file drops
   const handleDropFiles = useCallback((newFiles) => {
-    // Check validation if needed
     setFiles(prev => [...prev, ...newFiles]);
   }, []);
 
-  // Remove files
   const handleRemove = useCallback((index) => {
     if (processing) return;
     if (index === 'all') {
@@ -45,54 +59,27 @@ function App() {
     }
   }, [processing]);
 
-  // Process Queue
   const processQueue = useCallback(async () => {
     if (processing || files.length === 0) return;
-
-    // Find first unprocessed or just start from 0 if refreshed
-    // Simple queue logic: process index 0 to N
-    // But we want to allow adding files mid-process?
-    // Let's iterate.
-    
-    // For this demo: START button triggers the loop from index 0 (or next pending).
-    // If I click start:
     let startIndex = currentFileIndex + 1;
-    if (startIndex >= files.length) startIndex = 0; // Restart if done
+    if (startIndex >= files.length) startIndex = 0;
 
-    // We need a loop function that calls itself or iterate
-    // Using a recursive function to sequence:
-    
     const processNext = async (idx) => {
       if (idx >= files.length) {
-        setCurrentFileIndex(-1); // Done
+        setCurrentFileIndex(-1);
         return;
       }
-
       setCurrentFileIndex(idx);
       const file = files[idx];
       const type = getFileType(file.name);
       
-      // Determine output path logic (for Phase 2 demo, we save next to input or desktop?)
-      // We assume backend handles output naming if we pass folder, but here we pass files.
-      // Let's create an output filename.
-      // For Tauri, we might default to same folder with suffix.
-      // Input path: file.path (Absolute path from dropzone if Tauri configured right, or name)
-      // NOTE: react-dropzone in browser gives file objects. In Tauri, 'path' property might be available.
-      // If 'path' is missing (browser dev mode), we can't really upscale real files.
-      // We'll proceed assuming file.path exists.
-      
       const inputPath = file.path; 
       if (!inputPath) {
-         // Fallback for browser testing
-         console.warn("No path found, skipping real upscale (Browser Mock Mode?)");
-         // Mock delay
-         await new Promise(r => setTimeout(r, 2000));
+         await new Promise(r => setTimeout(r, 1000));
          await processNext(idx + 1);
          return;
       }
 
-      // Output path construction (hacky for now, ideal: select output dir)
-      // Just append _upscaled
       const parts = inputPath.split('.');
       const ext = parts.pop();
       const basePath = parts.join('.');
@@ -105,147 +92,214 @@ function App() {
       ];
       
       if (type === 'video') {
-         args.push('--quality', options.quality);
-         args.push('--format', options.format);
-         if (options.preset !== 'medium') args.push('--preset', options.preset); // Optimization
+         args.push('--quality', options.quality, '--format', options.format);
+         if (options.preset !== 'medium') args.push('--preset', options.preset);
          if (options.noAudio) args.push('--no-audio');
       }
+      if (options.tileSize > 0) args.push('--tile-size', String(options.tileSize));
 
-      if (options.tileSize > 0) {
-        args.push('--tile-size', String(options.tileSize));
-      }
-
-      // Run
       await runUpscale(args, async () => {
-        // On success
         setProcessedFiles(prev => ({ ...prev, [idx]: outPath }));
-        // Next
         await processNext(idx + 1);
-      }, () => {
-        // On Error, stop or continue? Let's stop.
-        setCurrentFileIndex(-1);
-      });
+      }, () => setCurrentFileIndex(-1));
     };
 
     processNext(startIndex);
   }, [files, processing, currentFileIndex, options, runUpscale]);
 
-  // Current active file for preview
   const activeIndex = currentFileIndex !== -1 ? currentFileIndex : (files.length > 0 ? 0 : -1);
   const activeFile = files[activeIndex];
-  // Simplistic preview logic: if processed exists, show processed path (if browser could read it), else original.
-  // Warning: Browser cannot display local files via path directly due to security.
-  // Tauri needs `convertFileSrc`.
-  // I will import convertFileSrc.
-  // But wait, user didn't install @tauri-apps/api/core... but @tauri-apps/api.
-  // Tauri V2: import { convertFileSrc } from '@tauri-apps/api/core';
-  // Let's try to handle preview image dynamically. 
-  // For videos, maybe a thumbnail? PreviewCard logic is basic for now.
 
   return (
-    <div className="min-h-screen bg-background text-text flex flex-col font-sans select-none overflow-hidden">
+    <div className="h-screen w-screen bg-background text-white flex overflow-hidden mesh-bg">
       <ToastContainer />
-      
-      {/* Header */}
-      <header className="h-14 border-b border-gray-800 flex items-center px-6 bg-surface/50 backdrop-blur-md z-50">
-        <div className="flex items-center gap-3">
-          <img src="/logo-fox-shoot.png" alt="FoxShoot" className="w-8 h-8 object-contain drop-shadow-lg" />
-          <h1 className="text-lg font-bold tracking-tight text-white">
-            Fox<span className="text-primary">Shoot</span> <span className="text-xs font-normal text-gray-500 ml-2 border border-gray-700 rounded px-1.5 py-0.5">V2.0</span>
-          </h1>
-        </div>
-        <div className="ml-auto flex items-center gap-4">
-           {/* Status Indicator */}
-           <div className="flex items-center gap-2 text-xs font-medium px-3 py-1 bg-black/20 rounded-full border border-white/5">
-             <div className={clsx("w-2 h-2 rounded-full", processing ? "bg-primary animate-pulse" : "bg-green-500")} />
-             {processing ? "ENGINE BUSY" : "ENGINE READY"}
-           </div>
-        </div>
-      </header>
 
-      {/* Main Content - Two Columns */}
-      <main className="flex-1 flex overflow-hidden">
-        
-        {/* Left Panel: Upload & Batch */}
-        <section className="w-[350px] lg:w-[400px] border-r border-gray-800 bg-surface/30 flex flex-col p-4 gap-4 z-10">
-           <UploadZone onDropFiles={handleDropFiles} />
-           
-           <div className="flex-1 overflow-hidden min-h-0">
-             <BatchList 
-               files={files} 
-               onRemove={handleRemove} 
-               currentFileIndex={currentFileIndex}
-               processing={processing}
-             />
-           </div>
+      {/* --- SIDEBAR NAV --- */}
+      <aside className="w-16 glass flex flex-col items-center py-6 gap-8 z-50">
+        <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center border border-primary/30 p-2">
+           <img src="/logo-fox-shoot.png" alt="Fox" className="w-full h-full object-contain" />
+        </div>
 
-           {/* Start Button Area in Sidebar */}
-           <div className="mt-auto pt-2">
-             {processing ? (
+        <nav className="flex flex-col gap-4">
+           <SideNavIcon 
+              icon={PhotoIcon} 
+              active={activeTab === 'upscale'} 
+              onClick={() => setActiveTab('upscale')} 
+              label="Upscale" 
+           />
+           <SideNavIcon 
+              icon={Cog6ToothIcon} 
+              active={activeTab === 'engine'} 
+              onClick={() => setActiveTab('engine')} 
+              label="Engine" 
+           />
+        </nav>
+
+        <div className="mt-auto">
+           <div className={clsx(
+             "w-2 h-2 rounded-full",
+             processing ? "bg-primary animate-pulse" : "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]"
+           )} />
+        </div>
+      </aside>
+
+      {/* --- MAIN STAGE --- */}
+      <main className="flex-1 flex flex-col min-w-0 relative">
+        <header className="h-16 px-8 flex items-center justify-between border-b border-white/5">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold tracking-tight">
+              {activeTab === 'upscale' ? 'Precision Upscaling' : 'Engine Configuration'}
+            </h2>
+            <SparklesIcon className="w-4 h-4 text-primary animate-pulse-slow ml-2" />
+          </div>
+
+          <div className="flex items-center gap-4">
+             {files.length > 0 && (
                <button 
-                 onClick={cancelUpscale}
-                 className="w-full py-3 rounded bg-red-500/10 border border-red-500/50 text-red-500 font-bold hover:bg-red-500/20 transition-all uppercase tracking-wide text-sm"
+                 onClick={() => setShowQueue(!showQueue)}
+                 className="p-2 hover:bg-white/5 rounded-lg transition-colors relative"
                >
-                 Cancel Job
-               </button>
-             ) : (
-               <button 
-                 onClick={processQueue}
-                 disabled={files.length === 0}
-                 className={clsx(
-                   "w-full py-3 rounded font-bold transition-all uppercase tracking-wide text-sm shadow-lg",
-                   files.length > 0 
-                     ? "bg-primary hover:bg-primary-dark text-white hover:shadow-primary/20" 
-                     : "bg-gray-800 text-gray-500 cursor-not-allowed"
-                 )}
-               >
-                 Start Processing
+                 <QueueListIcon className="w-5 h-5 text-gray-400" />
+                 <span className="absolute -top-1 -right-1 bg-primary text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                   {files.length}
+                 </span>
                </button>
              )}
-           </div>
-        </section>
+          </div>
+        </header>
 
-        {/* Right Panel: Options & Preview */}
-        <section className="flex-1 flex flex-col p-6 gap-6 overflow-y-auto custom-scrollbar relative">
-           
-           {/* Background Grid Pattern */}
-           <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" 
-                style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
-           </div>
+        <div className="flex-1 p-8 flex flex-col gap-6 overflow-hidden">
+          
+          <AnimatePresence mode="wait">
+            {activeTab === 'upscale' ? (
+              <motion.div 
+                key="upscale"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex-1 flex flex-col gap-6"
+              >
+                 {/* PREVIEW ZONE */}
+                 <div className="flex-1 min-h-0">
+                    <PreviewCard 
+                      original={activeFile ? activeFile.preview : null} 
+                      processed={activeFile && processedFiles[files.indexOf(activeFile)] ? convertFileSrc(processedFiles[files.indexOf(activeFile)]) : null}
+                    />
+                 </div>
 
+                 {/* ACTION BAR */}
+                 <div className="grid grid-cols-12 gap-4 items-center">
+                    <div className="col-span-8">
+                       <ProgressBar 
+                         percent={progress.percent} 
+                         eta={progress.eta}
+                         status={progress.status}
+                         isProcessing={processing}
+                       />
+                    </div>
+                    <div className="col-span-4 flex gap-2">
+                       {processing ? (
+                         <button 
+                           onClick={cancelUpscale}
+                           className="flex-1 flex items-center justify-center gap-2 bg-red-500/10 border border-red-500/30 text-red-500 py-3 rounded-xl hover:bg-red-500/20 transition-all uppercase text-xs font-bold tracking-widest"
+                         >
+                           <StopIcon className="w-4 h-4" /> Stop
+                         </button>
+                       ) : (
+                         <button 
+                           onClick={processQueue}
+                           disabled={files.length === 0}
+                           className={clsx(
+                             "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all uppercase text-xs font-bold tracking-widest shadow-xl",
+                             files.length > 0 
+                               ? "bg-primary text-white hover:bg-primary-dark hover:shadow-primary/20 glow-primary" 
+                               : "bg-white/5 text-gray-500 cursor-not-allowed"
+                           )}
+                         >
+                           <PlayIcon className="w-4 h-4" /> Start Loop
+                         </button>
+                       )}
+                    </div>
+                 </div>
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="engine"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.02 }}
+                className="flex-1 glass rounded-3xl p-10 flex flex-col items-center justify-center"
+              >
+                <div className="w-full max-w-2xl">
+                   <OptionsPanel options={options} setOptions={setOptions} disabled={processing} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-
-           {/* Top: Preview */}
-           <div className="flex-1 z-10 min-h-[300px]">
-             <PreviewCard 
-               original={activeFile ? activeFile.preview : null} 
-               processed={activeFile && processedFiles[files.indexOf(activeFile)] ? convertFileSrc(processedFiles[files.indexOf(activeFile)]) : null}
-             />
-           </div>
-
-           {/* Middle: Progress */}
-           <div className="z-10">
-             <ProgressBar 
-               percent={progress.percent} 
-               eta={progress.eta}
-               status={progress.status}
-               isProcessing={processing}
-             />
-           </div>
-
-           {/* Bottom: Options */}
-           <div className="z-10">
-             <OptionsPanel 
-               options={options} 
-               setOptions={setOptions} 
-               disabled={processing} 
-             />
-           </div>
-
-        </section>
+        </div>
       </main>
+
+      {/* --- QUEUE DRAWER (RIGHT) --- */}
+      <AnimatePresence>
+        {showQueue && (
+          <motion.div 
+            initial={{ x: 300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 300, opacity: 0 }}
+            className="w-80 h-full glass p-6 flex flex-col gap-6"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400">Project Files</h3>
+              <button 
+                onClick={() => setShowQueue(false)}
+                className="p-1 hover:bg-white/5 rounded"
+              >
+                <ChevronRightIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            <UploadZone onDropFiles={handleDropFiles} />
+
+            <div className="flex-1 min-h-0">
+               <BatchList 
+                 files={files} 
+                 onRemove={handleRemove} 
+                 currentFileIndex={currentFileIndex}
+                 processing={processing}
+               />
+            </div>
+            
+            {files.length > 0 && !processing && (
+              <button 
+                onClick={() => handleRemove('all')}
+                className="text-[10px] uppercase font-bold text-gray-500 hover:text-red-400 self-center transition-colors"
+              >
+                Flush Queue
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
+const SideNavIcon = ({ icon: Icon, active, onClick, label }) => (
+  <button 
+    onClick={onClick}
+    className={clsx(
+      "group relative p-3 rounded-xl transition-all duration-300",
+      active 
+        ? "bg-primary text-white shadow-[0_0_15px_rgba(249,115,22,0.3)]" 
+        : "text-gray-500 hover:text-gray-200 hover:bg-white/5"
+    )}
+  >
+    <Icon className="w-6 h-6" />
+    <span className="absolute left-full ml-4 px-2 py-1 bg-black text-[10px] font-bold uppercase tracking-widest rounded border border-white/10 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[100]">
+      {label}
+    </span>
+  </button>
+);
 
 export default App;

@@ -17,10 +17,9 @@ export const useUpscaleCLI = () => {
     // We assume 'python' is in PATH.
     
     try {
-      // Determine path to script. In dev/prod it might differ.
-      // For now, hardcode relative path for prompt scenario. 
-      // NOTE: In production bundle, you'd want to resource this file or use a compiled exe.
-      const scriptPath = '../backend/upscale_cli.py'; 
+      // Absolute path for Dev Mode (Guaranteed to work)
+      // In production, this should be resource-bundled or sidecar-bundled.
+      const scriptPath = 'C:\\Users\\donfa\\Desktop\\Fox\\QUALITY-SHOOT-V2\\backend\\upscale_cli.py'; 
 
       const command = Command.create('python', [
         scriptPath, 
