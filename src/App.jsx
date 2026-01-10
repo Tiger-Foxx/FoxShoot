@@ -217,7 +217,7 @@ function AppContent() {
         setProcessedFiles(prev => ({ ...prev, [idx]: outPath }));
         // Continue to next file in queue
         await processNext(idx + 1);
-      }, () => setCurrentFileIndex(-1));
+      }, () => setCurrentFileIndex(-1), file.name, type);
     };
 
     await processNext(startIndex);

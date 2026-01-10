@@ -2,11 +2,12 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "enables the default permissions",
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",
-    
     "shell:allow-open",
     "shell:allow-kill",
     {
@@ -49,7 +50,6 @@
         }
       ]
     },
-    
     "fs:default",
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",
@@ -59,12 +59,14 @@
     {
       "identifier": "fs:scope",
       "allow": [
-        { "path": "**" }
+        {
+          "path": "**"
+        }
       ]
     },
-    
     "dialog:default",
     "dialog:allow-open",
-    "dialog:allow-save"
+    "dialog:allow-save",
+    "notification:default"
   ]
 }

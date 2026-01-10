@@ -163,5 +163,12 @@ export const en = {
     waiting_signal: "Waiting for signal...",
     active: "Calculations Active",
     standby: "Standby Mode"
+  },
+  notifications: {
+    image_ready_title: "Image Ready",
+    video_ready_title: "Video Ready",
+    file_ready_body: "{{fileName}} has been enhanced successfully",
+    batch_complete_title: "Batch Complete",
+    batch_complete_body: "All {{count}} {{type}}s enhanced successfully"
   }
 };

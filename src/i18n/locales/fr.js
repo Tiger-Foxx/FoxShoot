@@ -163,5 +163,12 @@ export const fr = {
     waiting_signal: "En attente du signal...",
     active: "Calculs en cours",
     standby: "Mode Veille"
+  },
+  notifications: {
+    image_ready_title: "Image Prête",
+    video_ready_title: "Vidéo Prête",
+    file_ready_body: "{{fileName}} a été amélioré avec succès",
+    batch_complete_title: "Lot Terminé",
+    batch_complete_body: "Tous les {{count}} {{type}}s ont été améliorés"
   }
 };
