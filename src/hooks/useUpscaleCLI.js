@@ -1,35 +1,52 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Command } from '@tauri-apps/plugin-shell';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { getBackendConfig, buildCommandArgs, isDev } from '../utils/backendConfig';
 
 export const useUpscaleCLI = () => {
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState({ percent: 0, eta: 0, status: 'Idle' });
   const childRef = useRef(null);
+  const backendConfigRef = useRef(null);
   const { t } = useTranslation();
+
+  // Load backend config on mount
+  useEffect(() => {
+    getBackendConfig().then(config => {
+      backendConfigRef.current = config;
+      console.log('Backend config loaded:', config);
+    });
+  }, []);
 
   const runUpscale = useCallback(async (args, onComplete, onError) => {
     setProcessing(true);
     setProgress({ percent: 0, eta: 0, status: 'Starting...' });
     
     try {
-      // DEV: Path relative to src-tauri (CWD during tauri dev)
-      // PROD: This should be configured via resources or env
-      const scriptPath = '../../backend/upscale_cli.py'; 
+      // Get backend configuration (dev vs prod)
+      const config = backendConfigRef.current || await getBackendConfig();
+      const { command, scriptPath, usesPython } = config;
+      
+      // Build final arguments
+      const finalArgs = buildCommandArgs(scriptPath, args, usesPython);
+      
+      console.log(`Running [${isDev ? 'DEV' : 'PROD'}]:`, command, finalArgs);
 
-      console.log('Running python with args:', [scriptPath, ...args, '--progress', 'json']);
-
-      const command = Command.create('python', [
-        scriptPath, 
-        ...args,
-        '--progress', 'json'
-      ]);
+      // Create the command
+      let cmd;
+      if (usesPython) {
+        // Dev mode: use python with script path
+        cmd = Command.create('python', finalArgs);
+      } else {
+        // Prod mode: use the registered foxshoot-engine command
+        cmd = Command.create('foxshoot-engine', finalArgs);
+      }
 
       let stderrBuffer = '';
 
       // Setup stdout listener BEFORE spawning - THIS IS THE KEY FOR STREAMING
-      command.stdout.on('data', (line) => {
+      cmd.stdout.on('data', (line) => {
         console.log('STDOUT chunk:', line);
         try {
           const lines = line.split('\n').filter(Boolean);
@@ -60,19 +77,19 @@ export const useUpscaleCLI = () => {
       });
 
       // Setup stderr listener
-      command.stderr.on('data', (line) => {
+      cmd.stderr.on('data', (line) => {
         console.error('STDERR:', line);
         stderrBuffer += line + '\n';
       });
 
       // Spawn the process (non-blocking)
-      const child = await command.spawn();
+      const child = await cmd.spawn();
       childRef.current = child;
       console.log('Process spawned, pid:', child.pid);
 
       // Wait for process to complete using a promise
       return new Promise((resolve, reject) => {
-        command.on('close', (data) => {
+        cmd.on('close', (data) => {
           console.log('Process closed with code:', data.code);
           childRef.current = null;
           setProcessing(false);
@@ -94,7 +111,7 @@ export const useUpscaleCLI = () => {
           }
         });
 
-        command.on('error', (error) => {
+        cmd.on('error', (error) => {
           console.error('Process error:', error);
           toast.error(`Process error: ${error}`);
           setProcessing(false);
@@ -111,7 +128,7 @@ export const useUpscaleCLI = () => {
       if (onError) onError(err);
       throw err;
     }
-  }, []);
+  }, [t]);
 
   const cancelUpscale = useCallback(async () => {
     if (childRef.current) {
@@ -120,7 +137,7 @@ export const useUpscaleCLI = () => {
       setProcessing(false);
       setProgress({ percent: 0, eta: 0, status: 'Cancelled' });
     }
-  }, []);
+  }, [t]);
 
   return {
     runUpscale,

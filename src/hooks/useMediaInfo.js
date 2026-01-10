@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Command } from '@tauri-apps/plugin-shell';
-
-// DEV: Path relative to src-tauri (CWD during tauri dev)
-// PROD: This should be configured via resources or bundled executable
-const SCRIPT_PATH = '../../backend/upscale_cli.py';
+import { getBackendConfig, isDev } from '../utils/backendConfig';
 
 export const useMediaInfo = (filePath) => {
   const [info, setInfo] = useState(null);
@@ -22,13 +19,24 @@ export const useMediaInfo = (filePath) => {
       
       try {
         console.log('Fetching media info for:', filePath);
-        const command = Command.create('python', [
-          SCRIPT_PATH,
-          '--info', filePath,
-          '--progress', 'json'
-        ]);
         
-        const result = await command.execute();
+        // Get backend configuration (dev vs prod)
+        const config = await getBackendConfig();
+        const { command, scriptPath, usesPython } = config;
+        
+        // Build arguments
+        const infoArgs = ['--info', filePath, '--progress', 'json'];
+        
+        let cmd;
+        if (usesPython) {
+          cmd = Command.create('python', [scriptPath, ...infoArgs]);
+        } else {
+          cmd = Command.create('foxshoot-engine', infoArgs);
+        }
+        
+        console.log(`Running media info [${isDev ? 'DEV' : 'PROD'}]`);
+        
+        const result = await cmd.execute();
         
         console.log('Media info result:', { code: result.code, stdout: result.stdout, stderr: result.stderr });
         

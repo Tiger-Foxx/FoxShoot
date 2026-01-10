@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { listen } from '@tauri-apps/api/event';
 import { LandingPage } from './components/LandingPage';
 import { ImageStudio } from './components/ImageStudio';
 import { VideoLab } from './components/VideoLab';
@@ -12,6 +13,7 @@ import { useUpscaleCLI } from './hooks/useUpscaleCLI';
 import { getFileType } from './utils/fileUtils';
 import { HomeIcon, PhotoIcon, FilmIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
+import toast from 'react-hot-toast';
 
 const STORAGE_KEYS = {
   imageFiles: 'foxshoot_image_files',
@@ -71,6 +73,56 @@ function AppContent() {
       console.error('Failed to save videos to localStorage:', err);
     }
   }, [videoFiles]);
+
+  // Track if we should auto-start processing (from CLI --enhance)
+  const [autoStartEnhance, setAutoStartEnhance] = useState(false);
+
+  // Listen for 'enhance-file' event from Tauri (Windows context menu integration)
+  useEffect(() => {
+    let unlisten;
+    
+    const setup = async () => {
+      unlisten = await listen('enhance-file', (event) => {
+        const filePath = event.payload;
+        console.log('Received enhance-file event:', filePath);
+        
+        if (!filePath) return;
+        
+        // Create file object
+        const fileName = filePath.split(/[/\\]/).pop();
+        const fileType = getFileType(fileName);
+        
+        const fileObj = {
+          file: null,
+          path: filePath,
+          name: fileName,
+          preview: null
+        };
+        
+        // Add to appropriate queue and switch mode
+        if (fileType === 'video') {
+          setVideoFiles([fileObj]); // Replace queue with just this file
+          setVideoProcessedFiles({});
+          setMode('video');
+        } else {
+          setImageFiles([fileObj]); // Replace queue with just this file
+          setImageProcessedFiles({});
+          setMode('image');
+        }
+        
+        // Mark that we should auto-start
+        setAutoStartEnhance(true);
+        
+        toast.success(`🦊 ${fileName} - Enhancement starting...`);
+      });
+    };
+    
+    setup();
+    
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, []);
 
   // Determine current files based on mode
   const files = mode === 'video' ? videoFiles : imageFiles;
@@ -152,6 +204,18 @@ function AppContent() {
 
     await processNext(startIndex);
   }, [files, processing, currentFileIndex, options, settings, runUpscale, setCurrentFileIndex, setProcessedFiles]);
+
+  // Auto-start processing when file was added via --enhance CLI
+  useEffect(() => {
+    if (autoStartEnhance && files.length > 0 && !processing) {
+      setAutoStartEnhance(false);
+      // Small delay to ensure UI is ready
+      const timer = setTimeout(() => {
+        processQueue();
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [autoStartEnhance, files, processing, processQueue]);
 
   return (
     <div className="h-screen w-screen bg-black text-white flex flex-col font-sans overflow-hidden select-none">

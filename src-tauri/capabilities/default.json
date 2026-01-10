@@ -21,6 +21,11 @@
           "name": "cmd",
           "cmd": "cmd",
           "args": true
+        },
+        {
+          "name": "foxshoot-engine",
+          "cmd": "foxshoot-engine\\foxshoot-engine.exe",
+          "args": true
         }
       ]
     },
@@ -35,6 +40,11 @@
         {
           "name": "cmd",
           "cmd": "cmd",
+          "args": true
+        },
+        {
+          "name": "foxshoot-engine",
+          "cmd": "foxshoot-engine\\foxshoot-engine.exe",
           "args": true
         }
       ]

@@ -1,16 +1,38 @@
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager,
+    Manager, Emitter,
 };
+use std::env;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Parse CLI arguments for --enhance flag
+    let args: Vec<String> = env::args().collect();
+    let mut enhance_file: Option<String> = None;
+    
+    for i in 0..args.len() {
+        if args[i] == "--enhance" && i + 1 < args.len() {
+            enhance_file = Some(args[i + 1].clone());
+            break;
+        }
+        // Also handle direct file path as argument (Windows shell integration)
+        if i > 0 && !args[i].starts_with("-") && !args[i].starts_with("--") {
+            // Check if it looks like a file path
+            if args[i].contains("\\") || args[i].contains("/") || args[i].contains(".") {
+                enhance_file = Some(args[i].clone());
+                break;
+            }
+        }
+    }
+    
+    let enhance_file_clone = enhance_file.clone();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
-        .setup(|app| {
+        .setup(move |app| {
             // Debug logging
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -18,6 +40,16 @@ pub fn run() {
                         .level(log::LevelFilter::Info)
                         .build(),
                 )?;
+            }
+
+            // If --enhance was passed, emit event to frontend after window is ready
+            if let Some(file_path) = enhance_file_clone.clone() {
+                let app_handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    // Wait a bit for frontend to be ready
+                    std::thread::sleep(std::time::Duration::from_millis(1500));
+                    let _ = app_handle.emit("enhance-file", file_path);
+                });
             }
 
             // Create System Tray
