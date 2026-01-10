@@ -6,8 +6,33 @@
  * - PROD: Uses compiled executable (foxshoot-engine/foxshoot-engine.exe)
  */
 
+import { appDataDir } from '@tauri-apps/api/path';
+import { invoke } from '@tauri-apps/api/core';
+
 // Check if we're in development mode
 const isDev = import.meta.env.DEV;
+
+/**
+ * Get the directory where the exe is located (production only)
+ * Uses window.__TAURI_INTERNALS__ to get resource dir
+ */
+const getExeDir = async () => {
+  try {
+    // Get the resource directory which is next to the exe in production
+    const { resourceDir } = await import('@tauri-apps/api/path');
+    const resDir = await resourceDir();
+    // resourceDir returns the resources folder, we need parent
+    // In our case, foxshoot-engine is in the same folder as the exe
+    // So we go up one level from _up_/resources to _up_
+    const parts = resDir.split('\\');
+    parts.pop(); // Remove trailing empty or 'resources'
+    if (parts[parts.length - 1] === '') parts.pop();
+    return parts.join('\\');
+  } catch (e) {
+    console.warn('Could not get exe directory:', e);
+    return null;
+  }
+};
 
 /**
  * Get the backend engine configuration
@@ -23,8 +48,21 @@ export const getBackendConfig = async () => {
     };
   } else {
     // Production mode - use compiled executable
-    // The foxshoot-engine folder should be next to the main exe
-    // We use a shell command that doesn't require absolute path
+    // Try to get the actual exe directory for absolute path
+    const exeDir = await getExeDir();
+    
+    if (exeDir) {
+      const enginePath = `${exeDir}\\foxshoot-engine\\foxshoot-engine.exe`;
+      console.log('Using absolute engine path:', enginePath);
+      return {
+        command: enginePath,
+        scriptPath: null,
+        usesPython: false
+      };
+    }
+    
+    // Fallback to relative path
+    console.log('Using relative engine path');
     return {
       command: 'foxshoot-engine\\foxshoot-engine.exe',
       scriptPath: null,

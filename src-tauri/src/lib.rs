@@ -4,6 +4,30 @@ use tauri::{
     Manager, Emitter,
 };
 use std::env;
+use std::path::Path;
+
+/// Check if a path looks like a media file (not an executable)
+fn is_media_file(path: &str) -> bool {
+    let lower = path.to_lowercase();
+    // Must have an extension that's a known media type
+    let media_extensions = [
+        ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tiff",
+        ".mp4", ".mkv", ".avi", ".webm", ".mov", ".wmv", ".flv"
+    ];
+    media_extensions.iter().any(|ext| lower.ends_with(ext))
+}
+
+/// Filter CLI arguments to extract only media file paths
+fn extract_media_files(args: Vec<String>) -> Vec<String> {
+    args.into_iter()
+        .filter(|arg| !arg.starts_with("-") && !arg.starts_with("--"))
+        .filter(|arg| is_media_file(arg))
+        .filter(|arg| {
+            // Must be a valid path (contains path separators or exists)
+            arg.contains("\\") || arg.contains("/") || Path::new(arg).exists()
+        })
+        .collect()
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -16,14 +40,10 @@ pub fn run() {
             // Handle additional instances - send files to main instance
             eprintln!("Single instance triggered with args: {:?}", args);
             
-            let files: Vec<String> = args
-                .into_iter()
-                .filter(|arg| !arg.starts_with("-") && !arg.starts_with("--"))
-                .filter(|arg| arg.contains("\\") || arg.contains("/") || arg.contains("."))
-                .collect();
+            let files = extract_media_files(args);
             
             if !files.is_empty() {
-                eprintln!("Emitting enhance-files event with {} files", files.len());
+                eprintln!("Emitting enhance-files event with {} files: {:?}", files.len(), files);
                 let _ = app.emit("enhance-files", files);
             }
             
@@ -45,18 +65,16 @@ pub fn run() {
 
             // Parse CLI arguments for --enhance flag or direct file paths
             let args: Vec<String> = env::args().collect();
-            let mut files: Vec<String> = Vec::new();
+            eprintln!("Initial launch args: {:?}", args);
             
-            for i in 0..args.len() {
-                if args[i] == "--enhance" && i + 1 < args.len() {
-                    files.push(args[i + 1].clone());
-                } else if i > 0 && !args[i].starts_with("-") && !args[i].starts_with("--") {
-                    // Check if it looks like a file path
-                    if args[i].contains("\\") || args[i].contains("/") || args[i].contains(".") {
-                        files.push(args[i].clone());
-                    }
-                }
-            }
+            // Skip the first argument (executable path)
+            let file_args: Vec<String> = if args.len() > 1 {
+                args[1..].to_vec()
+            } else {
+                Vec::new()
+            };
+            
+            let files = extract_media_files(file_args);
             
             // If files were found, emit event to frontend after window is ready
             if !files.is_empty() {
@@ -65,7 +83,7 @@ pub fn run() {
                 std::thread::spawn(move || {
                     // Wait a bit for frontend to be ready
                     std::thread::sleep(std::time::Duration::from_millis(1500));
-                    eprintln!("Emitting enhance-files event with {} files", files_clone.len());
+                    eprintln!("Emitting enhance-files event with {} files: {:?}", files_clone.len(), files_clone);
                     let _ = app_handle.emit("enhance-files", files_clone);
                 });
             }
