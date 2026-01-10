@@ -29,8 +29,26 @@ fn extract_media_files(args: Vec<String>) -> Vec<String> {
         .collect()
 }
 
+/// Change working directory to the exe's folder
+/// This ensures the backend engine can be found when launched from context menu
+fn set_exe_working_directory() {
+    if let Ok(exe_path) = env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            if let Err(e) = env::set_current_dir(exe_dir) {
+                eprintln!("Warning: Could not set working directory to {:?}: {}", exe_dir, e);
+            } else {
+                eprintln!("Working directory set to: {:?}", exe_dir);
+            }
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // IMPORTANT: Set working directory to exe location FIRST
+    // This fixes "path not found" errors when launching from context menu
+    set_exe_working_directory();
+    
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
