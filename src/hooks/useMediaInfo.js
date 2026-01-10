@@ -21,6 +21,7 @@ export const useMediaInfo = (filePath) => {
       setError(null);
       
       try {
+        console.log('Fetching media info for:', filePath);
         const command = Command.create('python', [
           SCRIPT_PATH,
           '--info', filePath,
@@ -29,19 +30,27 @@ export const useMediaInfo = (filePath) => {
         
         const result = await command.execute();
         
+        console.log('Media info result:', { code: result.code, stdout: result.stdout, stderr: result.stderr });
+        
         if (result.code === 0 && result.stdout) {
           // Parse JSON output
           const lines = result.stdout.trim().split('\n');
+          let found = false;
           for (const line of lines) {
             try {
               const data = JSON.parse(line);
-              if (data.file) {
+              if (data.file || data.width) {
+                console.log('Parsed media info:', data);
                 setInfo(data);
+                found = true;
                 break;
               }
             } catch (e) {
               // Not JSON, continue
             }
+          }
+          if (!found) {
+            console.warn('No valid media info found in output');
           }
         } else {
           console.error('Failed to get media info:', result.stderr);
