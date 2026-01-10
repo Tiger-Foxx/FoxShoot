@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LandingPage } from './components/LandingPage';
 import { ImageStudio } from './components/ImageStudio';
@@ -12,14 +12,23 @@ import { getFileType } from './utils/fileUtils';
 import { HomeIcon, PhotoIcon, FilmIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
+const STORAGE_KEYS = {
+  imageFiles: 'foxshoot_image_files',
+  videoFiles: 'foxshoot_video_files'
+};
+
 function AppContent() {
   const [mode, setMode] = useState('landing'); // 'landing', 'image', 'video', 'settings'
   const { settings } = useSettings();
   
-  // SHARED STATE
-  const [files, setFiles] = useState([]);
-  const [processedFiles, setProcessedFiles] = useState({});
-  const [currentFileIndex, setCurrentFileIndex] = useState(-1);
+  // SEPARATE QUEUES FOR IMAGE AND VIDEO
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imageProcessedFiles, setImageProcessedFiles] = useState({});
+  const [imageCurrentIndex, setImageCurrentIndex] = useState(-1);
+  
+  const [videoFiles, setVideoFiles] = useState([]);
+  const [videoProcessedFiles, setVideoProcessedFiles] = useState({});
+  const [videoCurrentIndex, setVideoCurrentIndex] = useState(-1);
   
   const [options, setOptions] = useState({
     scale: settings.defaultScale || 2,
@@ -32,10 +41,51 @@ function AppContent() {
 
   const { runUpscale, cancelUpscale, processing, progress } = useUpscaleCLI();
 
+  // Load from LocalStorage on mount
+  useEffect(() => {
+    try {
+      const savedImages = localStorage.getItem(STORAGE_KEYS.imageFiles);
+      const savedVideos = localStorage.getItem(STORAGE_KEYS.videoFiles);
+      if (savedImages) setImageFiles(JSON.parse(savedImages));
+      if (savedVideos) setVideoFiles(JSON.parse(savedVideos));
+    } catch (err) {
+      console.error('Failed to load from localStorage:', err);
+    }
+  }, []);
+
+  // Save to LocalStorage when queues change
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.imageFiles, JSON.stringify(imageFiles));
+    } catch (err) {
+      console.error('Failed to save images to localStorage:', err);
+    }
+  }, [imageFiles]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.videoFiles, JSON.stringify(videoFiles));
+    } catch (err) {
+      console.error('Failed to save videos to localStorage:', err);
+    }
+  }, [videoFiles]);
+
+  // Determine current files based on mode
+  const files = mode === 'video' ? videoFiles : imageFiles;
+  const setFiles = mode === 'video' ? setVideoFiles : setImageFiles;
+  const processedFiles = mode === 'video' ? videoProcessedFiles : imageProcessedFiles;
+  const setProcessedFiles = mode === 'video' ? setVideoProcessedFiles : setImageProcessedFiles;
+  const currentFileIndex = mode === 'video' ? videoCurrentIndex : imageCurrentIndex;
+  const setCurrentFileIndex = mode === 'video' ? setVideoCurrentIndex : setImageCurrentIndex;
+
   // --- LOGIC ---
   const handleDropFiles = useCallback((newFiles) => {
-    setFiles(prev => [...prev, ...newFiles]);
-  }, []);
+    if (mode === 'video') {
+      setVideoFiles(prev => [...prev, ...newFiles]);
+    } else {
+      setImageFiles(prev => [...prev, ...newFiles]);
+    }
+  }, [mode]);
 
   const handleRemove = useCallback((index) => {
     if (processing) return;
@@ -46,7 +96,7 @@ function AppContent() {
     } else {
       setFiles(prev => prev.filter((_, i) => i !== index));
     }
-  }, [processing]);
+  }, [processing, setFiles, setCurrentFileIndex, setProcessedFiles]);
 
   const processQueue = useCallback(async () => {
     if (processing || files.length === 0) return;
@@ -93,15 +143,14 @@ function AppContent() {
 
       await runUpscale(args, async () => {
         setProcessedFiles(prev => ({ ...prev, [idx]: outPath }));
-        if (mode === 'image') await processNext(idx + 1);
-        else setCurrentFileIndex(-1);
+        // Continue to next file in queue
+        await processNext(idx + 1);
       }, () => setCurrentFileIndex(-1));
     };
 
-    processNext(startIndex);
-  }, [files, processing, currentFileIndex, options, runUpscale, mode, settings.outputFolder]);
+    await processNext(startIndex);
+  }, [files, processing, currentFileIndex, options, settings, runUpscale, setCurrentFileIndex, setProcessedFiles]);
 
-  // --- RENDER ---
   return (
     <div className="h-screen w-screen bg-black text-white flex flex-col font-sans overflow-hidden select-none">
       <ToastContainer />
@@ -119,13 +168,15 @@ function AppContent() {
                     active={mode === 'image'} 
                     onClick={() => setMode('image')} 
                     icon={PhotoIcon} 
-                    label="IMAGE STUDIO" 
+                    label="IMAGE STUDIO"
+                    count={imageFiles.length > 0 ? imageFiles.length : null}
                  />
                  <NavTab 
                     active={mode === 'video'} 
                     onClick={() => setMode('video')} 
                     icon={FilmIcon} 
-                    label="VIDEO LAB" 
+                    label="VIDEO LAB"
+                    count={videoFiles.length > 0 ? videoFiles.length : null}
                  />
               </div>
            </div>
@@ -151,17 +202,25 @@ function AppContent() {
         <AnimatePresence mode="wait">
            {mode === 'landing' && (
              <motion.div key="landing" className="absolute inset-0" exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.5 }}>
-               <LandingPage onSelectMode={setMode} />
+               <LandingPage onSelectMode={setMode} onOpenSettings={() => setMode('settings')} />
              </motion.div>
            )}
 
            {mode === 'image' && (
              <motion.div key="image" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                <ImageStudio 
-                 files={files}
-                 onDrop={handleDropFiles}
-                 onRemove={handleRemove}
-                 processedFiles={processedFiles}
+                 files={imageFiles}
+                 onDrop={(f) => setImageFiles(prev => [...prev, ...f])}
+                 onRemove={(i) => {
+                   if (i === 'all') {
+                     setImageFiles([]);
+                     setImageCurrentIndex(-1);
+                     setImageProcessedFiles({});
+                   } else {
+                     setImageFiles(prev => prev.filter((_, idx) => idx !== i));
+                   }
+                 }}
+                 processedFiles={imageProcessedFiles}
                  processing={processing}
                  progress={progress}
                  onStart={processQueue}
@@ -174,11 +233,19 @@ function AppContent() {
            {mode === 'video' && (
              <motion.div key="video" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                <VideoLab 
-                 files={files}
-                 processedFiles={processedFiles}
-                 currentIndex={currentFileIndex}
-                 onDrop={handleDropFiles}
-                 onRemove={handleRemove}
+                 files={videoFiles}
+                 processedFiles={videoProcessedFiles}
+                 currentIndex={videoCurrentIndex}
+                 onDrop={(f) => setVideoFiles(prev => [...prev, ...f])}
+                 onRemove={(i) => {
+                   if (i === 'all') {
+                     setVideoFiles([]);
+                     setVideoCurrentIndex(-1);
+                     setVideoProcessedFiles({});
+                   } else {
+                     setVideoFiles(prev => prev.filter((_, idx) => idx !== i));
+                   }
+                 }}
                  onStart={processQueue}
                  onStop={cancelUpscale}
                  progress={progress}
@@ -196,30 +263,35 @@ function AppContent() {
            )}
         </AnimatePresence>
       </main>
-
     </div>
   );
 }
 
-function App() {
-  return (
+const NavTab = ({ active, onClick, icon: Icon, label, count }) => (
+   <button 
+      onClick={onClick}
+      className={clsx(
+         "flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all",
+         active ? "bg-primary text-black" : "text-gray-500 hover:text-white"
+      )}
+   >
+      <Icon className="w-4 h-4" />
+      {label}
+      {count && (
+        <span className={clsx(
+          "ml-1 px-1.5 py-0.5 text-[9px] rounded-sm",
+          active ? "bg-black/20 text-black" : "bg-white/10 text-gray-400"
+        )}>
+          {count}
+        </span>
+      )}
+   </button>
+);
+
+export default function App() {
+   return (
     <SettingsProvider>
       <AppContent />
     </SettingsProvider>
-  );
+   );
 }
-
-const NavTab = ({ active, onClick, icon: Icon, label }) => (
-  <button 
-    onClick={onClick}
-    className={clsx(
-      "flex items-center gap-2 px-3 py-1 rounded-sm text-[10px] font-bold tracking-wider transition-all",
-      active ? "bg-white text-black" : "text-gray-500 hover:text-white"
-    )}
-  >
-    <Icon className="w-3 h-3" />
-    {label}
-  </button>
-);
-
-export default App;

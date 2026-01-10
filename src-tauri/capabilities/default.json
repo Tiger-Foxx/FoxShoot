@@ -5,6 +5,8 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
+    "core:window:allow-start-dragging",
+    
     "shell:allow-open",
     "shell:allow-kill",
     {
@@ -37,15 +39,22 @@
         }
       ]
     },
+    
     "fs:default",
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",
+    "fs:allow-exists",
+    "fs:allow-read",
+    "fs:allow-stat",
     {
       "identifier": "fs:scope",
       "allow": [
         { "path": "**" }
       ]
     },
-    "dialog:default"
+    
+    "dialog:default",
+    "dialog:allow-open",
+    "dialog:allow-save"
   ]
 }

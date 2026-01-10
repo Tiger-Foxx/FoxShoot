@@ -139,9 +139,21 @@ export const SettingsPage = ({ onBack }) => {
           </div>
 
           {/* ABOUT */}
-          <div className="pt-8 border-t border-white/10 text-center">
-            <p className="text-[10px] text-gray-600 font-mono uppercase tracking-widest">FoxShoot v3.0</p>
-            <p className="text-[9px] text-gray-700 mt-1">Neural Image & Video Restoration</p>
+          <div className="pt-8 border-t border-white/10 text-center space-y-3">
+            <div>
+              <p className="text-[10px] text-gray-600 font-mono uppercase tracking-widest">FoxShoot v3.0</p>
+              <p className="text-[9px] text-gray-700 mt-1">Neural Image & Video Restoration</p>
+            </div>
+            <a 
+              href="https://github.com/Tiger-Foxx" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-[10px] text-gray-600 hover:text-primary transition-colors font-mono"
+            >
+              <span>🦊</span>
+              <span>made by <span className="text-primary font-bold">Fox</span></span>
+              <span className="text-gray-700">• github.com/Tiger-Foxx</span>
+            </a>
           </div>
 
         </div>

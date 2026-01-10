@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PhotoIcon, FilmIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
+import { PhotoIcon, FilmIcon, ArrowRightIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
 const IMAGES = [
@@ -9,7 +9,7 @@ const IMAGES = [
   '/image3.jpg'
 ];
 
-export const LandingPage = ({ onSelectMode }) => {
+export const LandingPage = ({ onSelectMode, onOpenSettings }) => {
   const [currentImage, setCurrentImage] = useState(0);
 
   // Slideshow Logic
@@ -39,7 +39,16 @@ export const LandingPage = ({ onSelectMode }) => {
       
       {/* GRADIENT OVERLAY (To Ensure Text Readability but keep center clear) */ }
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black pointer-events-none" />
-      <div className="absolute inset-0 bg-[image:radial-gradient(circle,transparent_0%,rgba(0,0,0,0.8)_100%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_0%,rgba(0,0,0,0.8)_100%)] pointer-events-none" />
+
+      {/* SETTINGS BUTTON */}
+      <button 
+        onClick={onOpenSettings}
+        className="absolute top-6 right-6 z-20 p-2.5 border border-white/10 hover:border-primary/50 bg-black/50 backdrop-blur-sm text-gray-400 hover:text-primary transition-all"
+        title="Settings"
+      >
+        <Cog6ToothIcon className="w-5 h-5" />
+      </button>
 
       {/* CONTENT */}
       <div className="z-10 flex flex-col items-center space-y-12 max-w-4xl text-center">
@@ -84,8 +93,18 @@ export const LandingPage = ({ onSelectMode }) => {
       </div>
       
       {/* FOOTER */}
-      <div className="absolute bottom-8 text-[10px] text-gray-600 font-mono tracking-widest">
-         SYSTEM READY • GPU ACCELERATION DETECTED
+      <div className="absolute bottom-8 flex flex-col items-center gap-2">
+         <div className="text-[10px] text-gray-600 font-mono tracking-widest">
+           SYSTEM READY • GPU ACCELERATION DETECTED
+         </div>
+         <a 
+           href="https://github.com/Tiger-Foxx" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           className="text-[10px] text-gray-700 hover:text-primary transition-colors font-mono"
+         >
+           made with 🦊 by <span className="text-primary">Fox</span>
+         </a>
       </div>
     </div>
   );

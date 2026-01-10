@@ -1,11 +1,28 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { formatETA } from '../utils/formatETA';
-import { PlayIcon, StopIcon, FolderOpenIcon, TrashIcon, CheckCircleIcon, FilmIcon } from '@heroicons/react/24/outline';
+import { useMediaInfo } from '../hooks/useMediaInfo';
+import { PlayIcon, StopIcon, FolderOpenIcon, TrashIcon, CheckCircleIcon, FilmIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { Command } from '@tauri-apps/plugin-shell';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { UploadZone } from './UploadZone';
 import toast from 'react-hot-toast';
+
+const formatFileSize = (mb) => {
+  if (!mb) return null;
+  if (mb >= 1000) return `${(mb / 1000).toFixed(2)} GB`;
+  return `${mb.toFixed(1)} MB`;
+};
+
+const formatDuration = (seconds) => {
+  if (!seconds) return null;
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+};
 
 export const VideoLab = ({ 
   files = [],
@@ -24,9 +41,52 @@ export const VideoLab = ({
   const activeFile = files[activeIndex];
   const processedFile = processedFiles[activeIndex];
   
-  // Auto-show comparison when processing is done
-  const showComparison = !!processedFile && !processing;
+  // Fetch media info from backend
+  const { info: mediaInfo, loading: mediaLoading } = useMediaInfo(activeFile?.path);
+  
+  // Video refs for synchronization
+  const originalVideoRef = useRef(null);
+  const enhancedVideoRef = useRef(null);
+  
+  // Show comparison for THIS video if it's processed (even while other videos are still processing)
+  const isThisVideoBeingProcessed = processing && currentIndex === activeIndex;
+  const showComparison = !!processedFile && !isThisVideoBeingProcessed;
   const hasMultiple = files.length > 1;
+
+  // Sync videos when one seeks or plays
+  useEffect(() => {
+    if (!showComparison) return;
+    
+    const originalVideo = originalVideoRef.current;
+    const enhancedVideo = enhancedVideoRef.current;
+    if (!originalVideo || !enhancedVideo) return;
+
+    const syncVideos = () => {
+      if (Math.abs(originalVideo.currentTime - enhancedVideo.currentTime) > 0.1) {
+        enhancedVideo.currentTime = originalVideo.currentTime;
+      }
+    };
+
+    const handlePlay = () => {
+      enhancedVideo.currentTime = originalVideo.currentTime;
+      enhancedVideo.play();
+    };
+    
+    const handlePause = () => enhancedVideo.pause();
+    const handleSeeked = () => { enhancedVideo.currentTime = originalVideo.currentTime; };
+
+    originalVideo.addEventListener('play', handlePlay);
+    originalVideo.addEventListener('pause', handlePause);
+    originalVideo.addEventListener('seeked', handleSeeked);
+    originalVideo.addEventListener('timeupdate', syncVideos);
+
+    return () => {
+      originalVideo.removeEventListener('play', handlePlay);
+      originalVideo.removeEventListener('pause', handlePause);
+      originalVideo.removeEventListener('seeked', handleSeeked);
+      originalVideo.removeEventListener('timeupdate', syncVideos);
+    };
+  }, [showComparison, activeIndex]);
 
   const openOutputFolder = async (filePath) => {
     try {
@@ -37,6 +97,11 @@ export const VideoLab = ({
       console.error('Failed to open folder:', err);
       toast.error('Failed to open folder');
     }
+  };
+
+  const handleClearAll = () => {
+    onRemove('all');
+    setActiveIndex(0);
   };
 
   // Empty state
@@ -59,34 +124,50 @@ export const VideoLab = ({
           <div className="p-3 border-b border-white/5 flex justify-between items-center">
             <span className="text-[10px] font-bold uppercase text-gray-400">Queue ({files.length})</span>
             {!processing && (
-              <button onClick={() => onRemove('all')} className="text-gray-600 hover:text-red-500">
+              <button onClick={handleClearAll} className="text-gray-600 hover:text-red-500" title="Clear all">
                 <TrashIcon className="w-3 h-3" />
               </button>
             )}
           </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-            {files.map((f, i) => (
-              <div 
-                key={i} 
-                onClick={() => setActiveIndex(i)}
-                className={`flex items-center gap-2 p-2 cursor-pointer text-xs border transition-colors ${
-                  i === activeIndex 
-                    ? "bg-white/10 text-white border-white/10" 
-                    : "text-gray-500 hover:text-gray-300 border-transparent"
-                } ${processedFiles[i] ? "border-l-2 border-l-green-500" : ""} ${
-                  i === currentIndex && processing ? "border-l-2 border-l-primary" : ""
-                }`}
-              >
-                {processedFiles[i] ? (
-                  <CheckCircleIcon className="w-3 h-3 text-green-500 shrink-0" />
-                ) : i === currentIndex && processing ? (
-                  <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin shrink-0" />
-                ) : (
-                  <FilmIcon className="w-3 h-3 text-gray-600 shrink-0" />
-                )}
-                <span className="truncate flex-1 font-mono">{f.name}</span>
-              </div>
-            ))}
+            {files.map((f, i) => {
+              const isProcessing = i === currentIndex && processing;
+              const isProcessed = !!processedFiles[i];
+              const canDelete = !isProcessing; // Can delete if not currently processing
+              
+              return (
+                <div 
+                  key={i} 
+                  className={`group flex items-center gap-2 p-2 cursor-pointer text-xs border transition-colors ${
+                    i === activeIndex 
+                      ? "bg-white/10 text-white border-white/10" 
+                      : "text-gray-500 hover:text-gray-300 border-transparent"
+                  } ${isProcessed ? "border-l-2 border-l-green-500" : ""} ${
+                    isProcessing ? "border-l-2 border-l-primary" : ""
+                  }`}
+                >
+                  <div onClick={() => setActiveIndex(i)} className="flex items-center gap-2 flex-1 min-w-0">
+                    {isProcessed ? (
+                      <CheckCircleIcon className="w-3 h-3 text-green-500 shrink-0" />
+                    ) : isProcessing ? (
+                      <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin shrink-0" />
+                    ) : (
+                      <FilmIcon className="w-3 h-3 text-gray-600 shrink-0" />
+                    )}
+                    <span className="truncate flex-1 font-mono">{f.name}</span>
+                  </div>
+                  {canDelete && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onRemove(i); }}
+                      className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-red-500 transition-all p-0.5"
+                      title="Remove from queue"
+                    >
+                      <TrashIcon className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
           <div className="p-2 border-t border-white/5">
             <UploadZone onDropFiles={onDrop} minimal />
@@ -106,32 +187,38 @@ export const VideoLab = ({
                   {activeFile ? (
                      <video 
                         src={convertFileSrc(activeFile.path)} 
-                        className="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition-all duration-500" 
-                        muted loop autoPlay playsInline
+                        className="w-full h-full object-contain" 
+                        muted
+                        loop autoPlay playsInline
+                        controls
                      />
                   ) : (
                      <div className="text-gray-700 font-mono text-xs tracking-widest">NO SIGNAL INPUT</div>
                   )}
               </div>
             ) : (
+              // SYNCHRONIZED SIDE BY SIDE COMPARISON
               <div className="absolute inset-0 flex">
                 <div className="flex-1 relative border-r border-primary/30">
                   <video 
+                    ref={originalVideoRef}
                     src={convertFileSrc(activeFile.path)} 
                     className="w-full h-full object-contain" 
                     muted loop autoPlay playsInline
+                    controls
                   />
-                  <div className="absolute top-4 left-4 bg-black/80 px-2 py-1 text-[10px] font-bold text-gray-400 border border-white/10">
+                  <div className="absolute top-4 left-4 bg-black/80 px-2 py-1 text-[10px] font-bold text-gray-400 border border-white/10 pointer-events-none">
                     ORIGINAL
                   </div>
                 </div>
                 <div className="flex-1 relative">
                   <video 
+                    ref={enhancedVideoRef}
                     src={convertFileSrc(processedFile)} 
                     className="w-full h-full object-contain" 
                     muted loop autoPlay playsInline
                   />
-                  <div className="absolute top-4 right-4 bg-primary/90 px-2 py-1 text-[10px] font-bold text-black border border-primary">
+                  <div className="absolute top-4 right-4 bg-primary/90 px-2 py-1 text-[10px] font-bold text-black border border-primary pointer-events-none">
                     ENHANCED
                   </div>
                 </div>
@@ -237,6 +324,78 @@ export const VideoLab = ({
             </ControlGroup>
          </div>
 
+         {/* MEDIA INFO */}
+         {activeFile && (
+           <div className="p-4 border border-white/10 bg-panel space-y-3">
+             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-white/5 pb-2 flex items-center gap-2">
+               Media Info
+               {mediaLoading && <div className="w-2 h-2 border border-primary border-t-transparent rounded-full animate-spin" />}
+             </h3>
+             
+             {mediaInfo ? (
+               <div className="space-y-2 text-[10px]">
+                 {/* Resolution */}
+                 <div className="flex justify-between">
+                   <span className="text-gray-600">Resolution</span>
+                   <span className="text-white font-mono">{mediaInfo.width}×{mediaInfo.height}</span>
+                 </div>
+                 {/* Duration */}
+                 {mediaInfo.duration_seconds && (
+                   <div className="flex justify-between">
+                     <span className="text-gray-600">Duration</span>
+                     <span className="text-gray-300 font-mono">{formatDuration(mediaInfo.duration_seconds)}</span>
+                   </div>
+                 )}
+                 {/* FPS */}
+                 {mediaInfo.fps && (
+                   <div className="flex justify-between">
+                     <span className="text-gray-600">Frame Rate</span>
+                     <span className="text-gray-300 font-mono">{mediaInfo.fps.toFixed(2)} fps</span>
+                   </div>
+                 )}
+                 {/* Frame Count */}
+                 {mediaInfo.frame_count && (
+                   <div className="flex justify-between">
+                     <span className="text-gray-600">Frames</span>
+                     <span className="text-gray-300 font-mono">{mediaInfo.frame_count.toLocaleString()}</span>
+                   </div>
+                 )}
+                 {/* File Size */}
+                 {mediaInfo.size_mb && (
+                   <div className="flex justify-between">
+                     <span className="text-gray-600">Size</span>
+                     <span className="text-gray-300 font-mono">{formatFileSize(mediaInfo.size_mb)}</span>
+                   </div>
+                 )}
+                 {/* Codec */}
+                 <div className="flex justify-between">
+                   <span className="text-gray-600">Codec</span>
+                   <span className="text-gray-300 font-mono uppercase">{mediaInfo.video_codec || 'Unknown'}</span>
+                 </div>
+                 {/* Audio */}
+                 <div className="flex justify-between">
+                   <span className="text-gray-600">Audio</span>
+                   <span className={`font-mono uppercase ${mediaInfo.has_audio ? 'text-green-400' : 'text-gray-600'}`}>
+                     {mediaInfo.has_audio ? mediaInfo.audio_codec || 'Yes' : 'None'}
+                   </span>
+                 </div>
+                 
+                 {/* Output Preview */}
+                 <div className="pt-2 mt-2 border-t border-white/5">
+                   <div className="flex justify-between text-primary">
+                     <span className="font-bold">Output</span>
+                     <span className="font-mono">{mediaInfo.width * options.scale}×{mediaInfo.height * options.scale}</span>
+                   </div>
+                 </div>
+               </div>
+             ) : (
+               <div className="text-[10px] text-gray-600 font-mono">
+                 {mediaLoading ? 'Analyzing...' : 'No info available'}
+               </div>
+             )}
+           </div>
+         )}
+
          {/* OUTPUT INFO */}
          {processedFile && (
            <div className="p-3 bg-green-500/10 border border-green-500/30 space-y-2">
@@ -249,6 +408,17 @@ export const VideoLab = ({
                Open Folder
              </button>
            </div>
+         )}
+
+         {/* CLEAR BUTTON (when done) */}
+         {!processing && Object.keys(processedFiles).length > 0 && (
+           <button 
+             onClick={handleClearAll}
+             className="w-full py-3 flex items-center justify-center gap-2 text-[10px] font-bold uppercase border border-white/10 hover:border-white/30 text-gray-400 hover:text-white transition-colors"
+           >
+             <PlusIcon className="w-4 h-4" />
+             New Session
+           </button>
          )}
 
          {/* ACTION BUTTON */}
