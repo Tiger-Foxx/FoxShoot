@@ -113,21 +113,19 @@ function AppContent() {
           }
         });
         
-        // Add files to appropriate queues
+        // Add files to appropriate queues (APPEND, don't replace)
         if (imageFileObjs.length > 0) {
-          setImageFiles(imageFileObjs);
-          setImageProcessedFiles({});
+          setImageFiles(prev => [...prev, ...imageFileObjs]);
           setMode('image');
-          toast.success(`🦊 ${imageFileObjs.length} image${imageFileObjs.length > 1 ? 's' : ''} added`);
+          toast.success(`${imageFileObjs.length} image${imageFileObjs.length > 1 ? 's' : ''} added`);
         }
         
         if (videoFileObjs.length > 0) {
-          setVideoFiles(videoFileObjs);
-          setVideoProcessedFiles({});
+          setVideoFiles(prev => [...prev, ...videoFileObjs]);
           if (imageFileObjs.length === 0) {
             setMode('video');
           }
-          toast.success(`🦊 ${videoFileObjs.length} video${videoFileObjs.length > 1 ? 's' : ''} added`);
+          toast.success(`${videoFileObjs.length} video${videoFileObjs.length > 1 ? 's' : ''} added`);
         }
         
         // Mark that we should auto-start
