@@ -86,28 +86,28 @@ Our proprietary processing engine is built on an optimized version of industry-l
 
 ## 📸 Showcase
 
-### Main Interface
+### Main Interface (Home)
 
 <p align="center">
-  <img src="docs/screenshots/main-interface.png" alt="Main Interface" width="800">
+  <img src="docs/screenshots/home.png" alt="Home Screen" width="800">
 </p>
 
-### Before & After Comparison
+### Image Studio & Batch Processing
 
 <p align="center">
-  <img src="docs/screenshots/comparison-slider.png" alt="Comparison Slider" width="800">
+  <img src="docs/screenshots/image-studio.png" alt="Image Studio" width="800">
 </p>
 
-### Batch Processing
+### Video Lab
 
 <p align="center">
-  <img src="docs/screenshots/batch-processing.png" alt="Batch Processing" width="800">
+  <img src="docs/screenshots/video-lab.png" alt="Video Lab" width="800">
 </p>
 
-### Video Upscaling
+### Advanced Settings
 
 <p align="center">
-  <img src="docs/screenshots/video-mode.png" alt="Video Mode" width="800">
+  <img src="docs/screenshots/settings.png" alt="Settings" width="800">
 </p>
 
 ### Quality Comparison
@@ -118,8 +118,8 @@ Our proprietary processing engine is built on an optimized version of industry-l
     <td align="center"><b>FoxShoot 4x (1920p)</b></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/compare-before.png" width="400"></td>
-    <td><img src="docs/screenshots/compare-after.png" width="400"></td>
+    <td><img src="docs/screenshots/gojo-before.jpg" width="400"></td>
+    <td><img src="docs/screenshots/gojo-after.jpg" width="400"></td>
   </tr>
 </table>
 
