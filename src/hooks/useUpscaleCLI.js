@@ -1,18 +1,22 @@
 import { useState, useCallback, useRef } from 'react';
 import { Command } from '@tauri-apps/plugin-shell';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 export const useUpscaleCLI = () => {
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState({ percent: 0, eta: 0, status: 'Idle' });
   const childRef = useRef(null);
+  const { t } = useTranslation();
 
   const runUpscale = useCallback(async (args, onComplete, onError) => {
     setProcessing(true);
     setProgress({ percent: 0, eta: 0, status: 'Starting...' });
     
     try {
-      const scriptPath = 'C:\\Users\\donfa\\Desktop\\Fox\\QUALITY-SHOOT-V2\\backend\\upscale_cli.py'; 
+      // DEV: Path relative to src-tauri (CWD during tauri dev)
+      // PROD: This should be configured via resources or env
+      const scriptPath = '../../backend/upscale_cli.py'; 
 
       console.log('Running python with args:', [scriptPath, ...args, '--progress', 'json']);
 
@@ -74,8 +78,8 @@ export const useUpscaleCLI = () => {
           setProcessing(false);
           
           if (data.code === 0) {
-            setProgress({ percent: 100, eta: 0, status: 'Done!' });
-            toast.success("Upscaling Completed!");
+            setProgress({ percent: 100, eta: 0, status: t('common.complete') });
+            toast.success(t('common.output_ready'));
             if (onComplete) onComplete();
             resolve();
           } else {
@@ -112,7 +116,7 @@ export const useUpscaleCLI = () => {
   const cancelUpscale = useCallback(async () => {
     if (childRef.current) {
       await childRef.current.kill();
-      toast('Operation Cancelled', { icon: '🛑' });
+      toast(t('common.abort'), { icon: '🛑' });
       setProcessing(false);
       setProgress({ percent: 0, eta: 0, status: 'Cancelled' });
     }

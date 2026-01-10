@@ -1,7 +1,9 @@
 import { AdjustmentsHorizontalIcon, CpuChipIcon, BoltIcon, Square2StackIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
 
 export const OptionsPanel = ({ options, setOptions, disabled }) => {
+  const { t } = useTranslation();
   const handleChange = (key, value) => {
     setOptions(prev => ({ ...prev, [key]: value }));
   };
@@ -9,8 +11,8 @@ export const OptionsPanel = ({ options, setOptions, disabled }) => {
   return (
     <div className="flex flex-col gap-10">
       <div className="text-center">
-        <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Engine Setup</h2>
-        <p className="text-gray-500 text-sm">Fine-tune the upscaling neural network parameters.</p>
+        <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">{t('options_panel.title')}</h2>
+        <p className="text-gray-500 text-sm">{t('options_panel.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
@@ -18,7 +20,7 @@ export const OptionsPanel = ({ options, setOptions, disabled }) => {
         {/* SCALE FACTOR */}
         <div className="space-y-4">
           <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
-            <Square2StackIcon className="w-4 h-4" /> Multiplier
+            <Square2StackIcon className="w-4 h-4" /> {t('options_panel.multiplier')}
           </label>
           <div className="grid grid-cols-3 gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/5">
             {[2, 3, 4].map(s => (
@@ -42,7 +44,7 @@ export const OptionsPanel = ({ options, setOptions, disabled }) => {
         {/* SPEED PRESET */}
         <div className="space-y-4">
           <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
-            <BoltIcon className="w-4 h-4" /> Velocity
+            <BoltIcon className="w-4 h-4" /> {t('options_panel.velocity')}
           </label>
           <div className="grid grid-cols-2 gap-2">
             {['fast', 'medium', 'slow', 'ultrafast'].map(p => (
@@ -66,7 +68,7 @@ export const OptionsPanel = ({ options, setOptions, disabled }) => {
         {/* VRAM TILING */}
         <div className="space-y-4">
           <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
-            <CpuChipIcon className="w-4 h-4" /> Memory Tiling
+            <CpuChipIcon className="w-4 h-4" /> {t('options_panel.memory_tiling')}
           </label>
           <select 
             value={options.tileSize}
@@ -74,8 +76,8 @@ export const OptionsPanel = ({ options, setOptions, disabled }) => {
             disabled={disabled}
             className="w-full bg-white/5 border border-white/10 text-white text-sm rounded-xl p-4 focus:border-primary focus:outline-none appearance-none cursor-pointer hover:bg-white/10 transition-colors"
           >
-            <option value={0} className="bg-background">Auto Control (Smart)</option>
-            <option value={400} className="bg-background">400 (Heavy VRAM)</option>
+            <option value={0} className="bg-background">{t('options_panel.auto_control')}</option>
+            <option value={400} className="bg-background">{t('options_panel.heavy_vram')}</option>
             <option value={256} className="bg-background">256 (Balanced)</option>
             <option value={128} className="bg-background">128 (Safe Mode)</option>
           </select>
@@ -84,7 +86,7 @@ export const OptionsPanel = ({ options, setOptions, disabled }) => {
         {/* ENCODING */}
         <div className="space-y-4">
           <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
-            <AdjustmentsHorizontalIcon className="w-4 h-4" /> Output Format
+            <AdjustmentsHorizontalIcon className="w-4 h-4" /> {t('options_panel.output_format')}
           </label>
           <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5 gap-2">
             {['mp4', 'mkv', 'webm'].map(f => (

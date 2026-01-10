@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const ComparisonView = ({ original, processed }) => {
   const [sliderPos, setSliderPos] = useState(50);
   const containerRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
+  const { t } = useTranslation();
 
   const handleMove = useCallback((clientX) => {
     if (!containerRef.current) return;
@@ -59,7 +61,7 @@ export const ComparisonView = ({ original, processed }) => {
                     <div className="w-8 h-8 border border-white/10" />
                  </div>
                  <span className="text-[10px] font-mono text-gray-500 uppercase tracking-[0.3em]">
-                    Awaiting Visual Input
+                    {t('comparison.awaiting_input')}
                  </span>
               </div>
           </div>
@@ -72,7 +74,7 @@ export const ComparisonView = ({ original, processed }) => {
           <div className="w-full h-full bg-black relative overflow-hidden">
                <img src={original} className="absolute inset-0 w-full h-full object-contain" />
                <div className="absolute top-4 left-4 bg-black/70 px-2 py-1 text-[10px] font-bold text-white border border-white/20 z-10">
-                 SOURCE
+                 {t('comparison.source')}
                </div>
           </div>
       )
@@ -115,10 +117,10 @@ export const ComparisonView = ({ original, processed }) => {
 
         {/* LABELS */}
         <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-sm px-3 py-1.5 text-[10px] font-bold text-gray-300 border border-white/10 z-20 uppercase tracking-wider">
-          Original
+          {t('common.original')}
         </div>
         <div className="absolute top-4 right-4 bg-primary/90 backdrop-blur-sm px-3 py-1.5 text-[10px] font-bold text-black border border-primary z-20 uppercase tracking-wider">
-          Enhanced
+          {t('common.enhanced')}
         </div>
 
         {/* SLIDER HANDLE */}

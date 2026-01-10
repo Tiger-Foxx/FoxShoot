@@ -2,14 +2,16 @@ import { TrashIcon, CheckCircleIcon, ClockIcon } from '@heroicons/react/24/outli
 import { ArrowPathIcon } from '@heroicons/react/24/solid';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export const BatchList = ({ files, onRemove, currentFileIndex, processing }) => {
+  const { t } = useTranslation();
   if (files.length === 0) return (
     <div className="flex-1 flex flex-col items-center justify-center text-center p-8 opacity-20">
        <div className="w-12 h-12 border border-dashed border-white rounded-full mb-4 flex items-center justify-center">
           <ClockIcon className="w-6 h-6" />
        </div>
-       <p className="text-[10px] uppercase font-black tracking-widest">No signals detected</p>
+       <p className="text-[10px] uppercase font-black tracking-widest">{t('batch.no_signals')}</p>
     </div>
   );
 

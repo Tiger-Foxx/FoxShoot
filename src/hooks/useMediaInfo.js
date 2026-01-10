@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Command } from '@tauri-apps/plugin-shell';
 
-const SCRIPT_PATH = 'C:\\Users\\donfa\\Desktop\\Fox\\QUALITY-SHOOT-V2\\backend\\upscale_cli.py';
+// DEV: Path relative to src-tauri (CWD during tauri dev)
+// PROD: This should be configured via resources or bundled executable
+const SCRIPT_PATH = '../../backend/upscale_cli.py';
 
 export const useMediaInfo = (filePath) => {
   const [info, setInfo] = useState(null);

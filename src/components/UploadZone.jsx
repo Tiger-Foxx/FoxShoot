@@ -4,9 +4,11 @@ import { listen } from '@tauri-apps/api/event';
 import { PlusIcon, FolderOpenIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export const UploadZone = ({ onDropFiles, minimal = false }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const { t } = useTranslation();
 
   // Listen for native Tauri drag & drop events
   useEffect(() => {
@@ -95,7 +97,7 @@ export const UploadZone = ({ onDropFiles, minimal = false }) => {
         )}
       >
         <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-           <PlusIcon className="w-3 h-3" /> {isDragging ? 'Drop here!' : 'Add Files'}
+           <PlusIcon className="w-3 h-3" /> {isDragging ? t('upload.drop_here') : t('upload.add_files')}
         </span>
       </button>
     )

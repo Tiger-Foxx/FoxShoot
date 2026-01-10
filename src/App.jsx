@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { LandingPage } from './components/LandingPage';
 import { ImageStudio } from './components/ImageStudio';
 import { VideoLab } from './components/VideoLab';
@@ -20,6 +21,7 @@ const STORAGE_KEYS = {
 function AppContent() {
   const [mode, setMode] = useState('landing'); // 'landing', 'image', 'video', 'settings'
   const { settings } = useSettings();
+  const { t } = useTranslation();
   
   // SEPARATE QUEUES FOR IMAGE AND VIDEO
   const [imageFiles, setImageFiles] = useState([]);
@@ -168,14 +170,14 @@ function AppContent() {
                     active={mode === 'image'} 
                     onClick={() => setMode('image')} 
                     icon={PhotoIcon} 
-                    label="IMAGE STUDIO"
+                    label={t('nav.image_studio')}
                     count={imageFiles.length > 0 ? imageFiles.length : null}
                  />
                  <NavTab 
                     active={mode === 'video'} 
                     onClick={() => setMode('video')} 
                     icon={FilmIcon} 
-                    label="VIDEO LAB"
+                    label={t('nav.video_lab')}
                     count={videoFiles.length > 0 ? videoFiles.length : null}
                  />
               </div>
@@ -184,12 +186,13 @@ function AppContent() {
            <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-[10px] font-mono text-gray-500">
                 <span className={clsx("w-2 h-2 rounded-full", processing ? "bg-primary animate-pulse" : "bg-green-500")} />
-                <span>{processing ? "ENGINE BUSY" : "SYSTEM IDLE"}</span>
+                <span>{processing ? t('nav.engine_busy') : t('nav.system_idle')}</span>
               </div>
               <div className="h-4 w-px bg-white/10" />
               <button 
                 onClick={() => setMode('settings')} 
                 className="p-2 text-gray-500 hover:text-primary transition-colors"
+                title={t('common.settings')}
               >
                 <Cog6ToothIcon className="w-5 h-5" />
               </button>

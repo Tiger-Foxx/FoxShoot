@@ -1,5 +1,6 @@
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { motion } from "framer-motion";
+import { useTranslation } from 'react-i18next';
 
 const MockImage = ({ text }) => (
   <div className="w-full h-full flex flex-col items-center justify-center text-white/10">
@@ -11,6 +12,7 @@ const MockImage = ({ text }) => (
 );
 
 export const PreviewCard = ({ original, processed }) => {
+  const { t } = useTranslation();
   return (
     <div className="w-full h-full bg-black rounded-[2rem] border border-white/5 overflow-hidden relative shadow-2xl group">
       
@@ -21,7 +23,7 @@ export const PreviewCard = ({ original, processed }) => {
       <div className="absolute bottom-8 right-8 w-4 h-4 border-b border-r border-white/20" />
 
       {!original ? (
-        <MockImage text="Optical Standby" />
+        <MockImage text={t('preview.optical_standby')} />
       ) : (
         <TransformWrapper centerOnInit={true}>
           <TransformComponent wrapperClass="!w-full !h-full cursor-crosshair">
@@ -40,17 +42,17 @@ export const PreviewCard = ({ original, processed }) => {
       <div className="absolute top-6 left-1/2 -translate-x-1/2 px-4 py-1.5 glass rounded-full flex items-center gap-3 border border-white/10 shadow-2xl">
          <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
          <span className="text-[9px] font-black uppercase tracking-widest text-white/80">
-            {processed ? "Vision Enhanced" : "Input Signal"}
+            {processed ? t('preview.vision_enhanced') : t('preview.input_signal')}
          </span>
       </div>
 
       <div className="absolute bottom-6 left-6 right-6 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity duration-500">
          <div className="text-[9px] font-bold text-gray-500 bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm">
-            Drag to pan • Scroll to zoom
+            {t('preview.drag_pan')}
          </div>
          {processed && (
            <div className="text-[9px] font-bold text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full backdrop-blur-sm">
-             Output: {processed.split('/').pop()}
+             {t('preview.output')}: {processed.split('/').pop()}
            </div>
          )}
       </div>

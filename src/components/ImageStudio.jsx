@@ -7,9 +7,11 @@ import { Command } from '@tauri-apps/plugin-shell';
 import clsx from 'clsx';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processing, progress, onStart, options, setOptions }) => {
   const [activeFileIndex, setActiveFileIndex] = useState(0);
+  const { t } = useTranslation();
   const activeFile = files[activeFileIndex];
   
   // Convert local paths to displayable URLs
@@ -18,7 +20,7 @@ export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processin
 
   const copyOutputPath = (path) => {
     navigator.clipboard.writeText(path);
-    toast.success('Path copied to clipboard!');
+    toast.success(t('common.output_saved'));
   };
 
   const openOutputFolder = async (filePath) => {
@@ -30,7 +32,7 @@ export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processin
       await command.execute();
     } catch (err) {
       console.error('Failed to open folder:', err);
-      toast.error('Failed to open folder');
+      toast.error(t('common.error_folder'));
     }
   };
 
@@ -40,14 +42,14 @@ export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processin
       {/* SIDEBAR TOOLS */}
       <div className="w-80 bg-panel border-r border-white/5 flex flex-col p-4 gap-4 z-10">
          <div className="space-y-1 pb-4 border-b border-white/5">
-            <h2 className="text-lg font-black text-white uppercase tracking-tighter">Image Studio</h2>
-            <p className="text-xs text-gray-600 font-mono">Pixel Perfect Restoration</p>
+            <h2 className="text-lg font-black text-white uppercase tracking-tighter">{t('image_studio.title')}</h2>
+            <p className="text-xs text-gray-600 font-mono">{t('image_studio.subtitle')}</p>
          </div>
 
          {/* SETTINGS MINI */}
          <div className="space-y-4">
             <div className="space-y-1">
-               <label className="text-[10px] text-gray-500 font-bold uppercase">Scale Factor</label>
+               <label className="text-[10px] text-gray-500 font-bold uppercase">{t('image_studio.scale_factor')}</label>
                <div className="flex gap-1">
                   {[2, 3, 4].map(s => (
                      <button
@@ -71,7 +73,7 @@ export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processin
            <div className="p-3 bg-primary/5 border border-primary/20 space-y-3">
              <div className="flex justify-between items-end">
                <div>
-                 <div className="text-[10px] text-primary font-bold uppercase tracking-widest">Processing</div>
+                 <div className="text-[10px] text-primary font-bold uppercase tracking-widest">{t('common.processing')}</div>
                  <div className="text-xs text-gray-400 font-mono truncate max-w-[180px]">{progress.status}</div>
                </div>
                <div className="text-right">
@@ -93,7 +95,7 @@ export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processin
              
              {progress.eta > 0 && (
                <div className="text-[10px] text-gray-500 font-mono text-right">
-                 ETA: {Math.round(progress.eta)}s
+                 {t('common.eta')}: {Math.round(progress.eta)}s
                </div>
              )}
            </div>
@@ -102,7 +104,7 @@ export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processin
          {/* QUEUE LIST */}
          <div className="flex-1 flex flex-col min-h-0 bg-black/20 border border-white/5">
              <div className="p-2 border-b border-white/5 flex justify-between items-center bg-white/5">
-                <span className="text-[10px] font-bold uppercase text-gray-400">Queue ({files.length})</span>
+                <span className="text-[10px] font-bold uppercase text-gray-400">{t('batch.queue_count', { count: files.length })}</span>
                 {files.length > 0 && !processing && (
                   <button onClick={() => onRemove('all')} className="text-gray-600 hover:text-red-500"><TrashIcon className="w-3 h-3" /></button>
                 )}
@@ -155,7 +157,7 @@ export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processin
                onClick={() => copyOutputPath(processedFiles[activeFileIndex])}
                className="p-3 bg-green-500/10 border border-green-500/30 cursor-pointer hover:bg-green-500/20 transition-colors"
              >
-               <div className="text-[10px] text-green-400 font-bold uppercase mb-1">Output Saved</div>
+               <div className="text-[10px] text-green-400 font-bold uppercase mb-1">{t('common.output_saved')}</div>
                <div className="text-[9px] text-green-300/70 font-mono truncate">
                  {processedFiles[activeFileIndex]}
                </div>
@@ -165,7 +167,7 @@ export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processin
                className="w-full py-2 flex items-center justify-center gap-2 text-[10px] font-bold uppercase border border-white/10 hover:border-primary/50 hover:text-primary transition-colors"
              >
                <FolderOpenIcon className="w-4 h-4" />
-               Open Folder
+               {t('common.open_folder')}
              </button>
            </div>
          )}
@@ -176,7 +178,7 @@ export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processin
            disabled={processing || files.length === 0}
            className="w-full py-4 bg-white text-black font-black uppercase tracking-widest text-xs hover:bg-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
          >
-            {processing ? "PROCESSING..." : "START BATCH"}
+            {processing ? `${t('common.processing')}...` : t('image_studio.process_all', { count: files.length || '' })}
          </button>
       </div>
 
@@ -185,7 +187,7 @@ export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processin
          {/* Top Info Bar */}
          <div className="h-10 border-b border-white/5 flex items-center justify-between px-4 bg-panel">
             <span className="text-[10px] font-mono text-gray-500 uppercase">
-               {activeFile ? `${activeFile.name} ${processedSrc ? '[ENHANCED]' : '[SOURCE]'}` : "IDLE"}
+               {activeFile ? `${activeFile.name} ${processedSrc ? `[${t('common.enhanced')}]` : `[${t('common.original')}]`}` : t('nav.system_idle')}
             </span>
             <div className="flex gap-4">
                <span className="text-[10px] font-mono text-gray-600">ZOOM: FIT</span>

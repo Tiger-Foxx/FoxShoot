@@ -1,16 +1,18 @@
 import { motion } from 'framer-motion';
 import { formatETA } from '../utils/formatETA';
+import { useTranslation } from 'react-i18next';
 
 export const ProgressBar = ({ percent, eta, status, isProcessing }) => {
+  const { t } = useTranslation();
   return (
     <div className="w-full space-y-3">
       <div className="flex justify-between items-end">
         <div className="space-y-1">
           <span className="text-[10px] font-black uppercase tracking-widest text-primary block">
-            Processing Core
+            {t('progress.core')}
           </span>
           <span className="text-sm font-bold text-white/90 truncate block max-w-[400px]">
-            {status || "Waiting for signal..."}
+            {status || t('progress.waiting_signal')}
           </span>
         </div>
         <div className="text-right">
@@ -43,10 +45,10 @@ export const ProgressBar = ({ percent, eta, status, isProcessing }) => {
           {isProcessing ? (
              <span className="flex items-center gap-1.5 text-primary">
                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-               Calculations Active
+               {t('progress.active')}
              </span>
           ) : (
-             <span>Standby Mode</span>
+             <span>{t('progress.standby')}</span>
           )}
         </div>
         <div className="flex items-center gap-4">

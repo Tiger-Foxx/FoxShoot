@@ -7,6 +7,7 @@ import { Command } from '@tauri-apps/plugin-shell';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { UploadZone } from './UploadZone';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const formatFileSize = (mb) => {
   if (!mb) return null;
@@ -38,6 +39,7 @@ export const VideoLab = ({
   setOptions 
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const { t } = useTranslation();
   const activeFile = files[activeIndex];
   const processedFile = processedFiles[activeIndex];
   
@@ -95,7 +97,7 @@ export const VideoLab = ({
       await command.execute();
     } catch (err) {
       console.error('Failed to open folder:', err);
-      toast.error('Failed to open folder');
+      toast.error(t('common.error_folder'));
     }
   };
 
@@ -122,9 +124,9 @@ export const VideoLab = ({
       {hasMultiple && (
         <div className="w-64 bg-panel border border-white/5 flex flex-col">
           <div className="p-3 border-b border-white/5 flex justify-between items-center">
-            <span className="text-[10px] font-bold uppercase text-gray-400">Queue ({files.length})</span>
+            <span className="text-[10px] font-bold uppercase text-gray-400">{t('batch.queue_count', { count: files.length })}</span>
             {!processing && (
-              <button onClick={handleClearAll} className="text-gray-600 hover:text-red-500" title="Clear all">
+              <button onClick={handleClearAll} className="text-gray-600 hover:text-red-500" title={t('common.remove')}>
                 <TrashIcon className="w-3 h-3" />
               </button>
             )}
@@ -193,7 +195,7 @@ export const VideoLab = ({
                         controls
                      />
                   ) : (
-                     <div className="text-gray-700 font-mono text-xs tracking-widest">NO SIGNAL INPUT</div>
+                     <div className="text-gray-700 font-mono text-xs tracking-widest">{t('batch.no_signals').toUpperCase()}</div>
                   )}
               </div>
             ) : (
@@ -208,7 +210,7 @@ export const VideoLab = ({
                     controls
                   />
                   <div className="absolute top-4 left-4 bg-black/80 px-2 py-1 text-[10px] font-bold text-gray-400 border border-white/10 pointer-events-none">
-                    ORIGINAL
+                    {t('common.original').toUpperCase()}
                   </div>
                 </div>
                 <div className="flex-1 relative">
@@ -219,7 +221,7 @@ export const VideoLab = ({
                     muted loop autoPlay playsInline
                   />
                   <div className="absolute top-4 right-4 bg-primary/90 px-2 py-1 text-[10px] font-bold text-black border border-primary pointer-events-none">
-                    ENHANCED
+                    {t('common.enhanced').toUpperCase()}
                   </div>
                 </div>
               </div>
@@ -238,10 +240,21 @@ export const VideoLab = ({
             {!showComparison && (
               <div className="absolute top-4 left-4 flex flex-col gap-1 z-10">
                  <div className="text-[10px] bg-black/80 border border-white/20 text-primary px-2 py-0.5 font-bold font-mono">
-                    {processing && activeIndex === currentIndex ? "● ENCODING" : processedFile ? "✓ COMPLETE" : "○ STANDBY"}
+                    {processing && activeIndex === currentIndex ? `● ${t('common.processing').toUpperCase()}` : processedFile ? `✓ ${t('common.complete').toUpperCase()}` : `○ ${t('common.standby').toUpperCase()}`}
                  </div>
                  {activeFile && <div className="text-[10px] text-gray-400 font-mono pl-1">{activeFile.name}</div>}
               </div>
+            )}
+
+            {/* REMOVE BUTTON - Single video mode only */}
+            {!hasMultiple && activeFile && !processing && (
+              <button 
+                onClick={handleClearAll}
+                className="absolute top-4 right-4 z-10 p-2 bg-black/80 border border-white/20 hover:border-red-500/50 hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-colors"
+                title={t('common.remove')}
+              >
+                <TrashIcon className="w-4 h-4" />
+              </button>
             )}
         </div>
 
@@ -252,11 +265,11 @@ export const VideoLab = ({
             />
             <div className="flex justify-between items-end relative z-10">
                 <div>
-                   <div className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1">Progress</div>
+                   <div className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1">{t('common.processing')}</div>
                    <div className="text-2xl font-mono text-white">{progress.percent.toFixed(1)}<span className="text-sm text-gray-600">%</span></div>
                 </div>
                 <div className="text-right">
-                   <div className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1">ETA</div>
+                   <div className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1">{t('common.eta')}</div>
                    <div className="text-xl font-mono text-primary">{formatETA(progress.eta)}</div>
                 </div>
             </div>
@@ -276,16 +289,16 @@ export const VideoLab = ({
       <div className="w-72 flex flex-col gap-4">
          
          <div className="p-4 border border-white/10 bg-panel flex flex-col gap-5">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-white/5 pb-2">Config</h3>
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-white/5 pb-2">{t('video_lab.config')}</h3>
             
-            <ControlGroup label="Mode">
+            <ControlGroup label={t('video_lab.mode')}>
                <select className="w-full p-2 text-xs bg-black text-gray-300 border border-white/10">
                   <option>Anime Video</option>
                   <option>General</option>
                </select>
             </ControlGroup>
 
-            <ControlGroup label="Scale">
+            <ControlGroup label={t('video_lab.scale')}>
                <div className="grid grid-cols-3 gap-1">
                  {[2, 3, 4].map(s => (
                    <button 
@@ -304,7 +317,7 @@ export const VideoLab = ({
                </div>
             </ControlGroup>
 
-            <ControlGroup label="Format">
+            <ControlGroup label={t('video_lab.format')}>
                <div className="flex gap-1">
                  {['mp4', 'mkv', 'webm'].map(f => (
                    <button 
@@ -328,7 +341,7 @@ export const VideoLab = ({
          {activeFile && (
            <div className="p-4 border border-white/10 bg-panel space-y-3">
              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest border-b border-white/5 pb-2 flex items-center gap-2">
-               Media Info
+               {t('video_lab.media_info')}
                {mediaLoading && <div className="w-2 h-2 border border-primary border-t-transparent rounded-full animate-spin" />}
              </h3>
              
@@ -336,61 +349,61 @@ export const VideoLab = ({
                <div className="space-y-2 text-[10px]">
                  {/* Resolution */}
                  <div className="flex justify-between">
-                   <span className="text-gray-600">Resolution</span>
+                   <span className="text-gray-600">{t('video_lab.resolution')}</span>
                    <span className="text-white font-mono">{mediaInfo.width}×{mediaInfo.height}</span>
                  </div>
                  {/* Duration */}
                  {mediaInfo.duration_seconds && (
                    <div className="flex justify-between">
-                     <span className="text-gray-600">Duration</span>
+                     <span className="text-gray-600">{t('video_lab.duration')}</span>
                      <span className="text-gray-300 font-mono">{formatDuration(mediaInfo.duration_seconds)}</span>
                    </div>
                  )}
                  {/* FPS */}
                  {mediaInfo.fps && (
                    <div className="flex justify-between">
-                     <span className="text-gray-600">Frame Rate</span>
-                     <span className="text-gray-300 font-mono">{mediaInfo.fps.toFixed(2)} fps</span>
+                     <span className="text-gray-600">{t('video_lab.fps')}</span>
+                     <span className="text-gray-300 font-mono">{mediaInfo.fps.toFixed(2)} {t('common.fps_label')}</span>
                    </div>
                  )}
                  {/* Frame Count */}
                  {mediaInfo.frame_count && (
                    <div className="flex justify-between">
-                     <span className="text-gray-600">Frames</span>
+                     <span className="text-gray-600">{t('video_lab.frames')}</span>
                      <span className="text-gray-300 font-mono">{mediaInfo.frame_count.toLocaleString()}</span>
                    </div>
                  )}
                  {/* File Size */}
                  {mediaInfo.size_mb && (
                    <div className="flex justify-between">
-                     <span className="text-gray-600">Size</span>
+                     <span className="text-gray-600">{t('video_lab.size')}</span>
                      <span className="text-gray-300 font-mono">{formatFileSize(mediaInfo.size_mb)}</span>
                    </div>
                  )}
                  {/* Codec */}
                  <div className="flex justify-between">
-                   <span className="text-gray-600">Codec</span>
-                   <span className="text-gray-300 font-mono uppercase">{mediaInfo.video_codec || 'Unknown'}</span>
+                   <span className="text-gray-600">{t('video_lab.codec')}</span>
+                   <span className="text-gray-300 font-mono uppercase">{mediaInfo.video_codec || t('common.unknown')}</span>
                  </div>
                  {/* Audio */}
                  <div className="flex justify-between">
-                   <span className="text-gray-600">Audio</span>
+                   <span className="text-gray-600">{t('video_lab.audio')}</span>
                    <span className={`font-mono uppercase ${mediaInfo.has_audio ? 'text-green-400' : 'text-gray-600'}`}>
-                     {mediaInfo.has_audio ? mediaInfo.audio_codec || 'Yes' : 'None'}
+                     {mediaInfo.has_audio ? mediaInfo.audio_codec || t('common.yes') : t('common.none')}
                    </span>
                  </div>
                  
                  {/* Output Preview */}
                  <div className="pt-2 mt-2 border-t border-white/5">
                    <div className="flex justify-between text-primary">
-                     <span className="font-bold">Output</span>
+                     <span className="font-bold">{t('video_lab.output')}</span>
                      <span className="font-mono">{mediaInfo.width * options.scale}×{mediaInfo.height * options.scale}</span>
                    </div>
                  </div>
                </div>
              ) : (
                <div className="text-[10px] text-gray-600 font-mono">
-                 {mediaLoading ? 'Analyzing...' : 'No info available'}
+                 {mediaLoading ? t('common.analyzing') : t('common.no_info')}
                </div>
              )}
            </div>
@@ -399,13 +412,13 @@ export const VideoLab = ({
          {/* OUTPUT INFO */}
          {processedFile && (
            <div className="p-3 bg-green-500/10 border border-green-500/30 space-y-2">
-             <div className="text-[10px] text-green-400 font-bold uppercase">Output Ready</div>
+             <div className="text-[10px] text-green-400 font-bold uppercase">{t('common.output_ready')}</div>
              <button 
                onClick={() => openOutputFolder(processedFile)}
                className="w-full py-2 flex items-center justify-center gap-2 text-[10px] font-bold uppercase border border-green-500/30 hover:bg-green-500/10 text-green-400 transition-colors"
              >
                <FolderOpenIcon className="w-4 h-4" />
-               Open Folder
+               {t('common.open_folder')}
              </button>
            </div>
          )}
@@ -417,7 +430,7 @@ export const VideoLab = ({
              className="w-full py-3 flex items-center justify-center gap-2 text-[10px] font-bold uppercase border border-white/10 hover:border-white/30 text-gray-400 hover:text-white transition-colors"
            >
              <PlusIcon className="w-4 h-4" />
-             New Session
+             {t('common.new_session')}
            </button>
          )}
 
@@ -425,11 +438,11 @@ export const VideoLab = ({
          <div className="mt-auto">
             {processing ? (
                <button onClick={onStop} className="w-full py-4 bg-red-900/20 border border-red-500/50 text-red-500 font-bold uppercase tracking-widest text-xs hover:bg-red-900/40 transition-colors flex items-center justify-center gap-2">
-                 <StopIcon className="w-4 h-4" /> ABORT
+                 <StopIcon className="w-4 h-4" /> {t('common.abort')}
                </button>
             ) : (
                <button onClick={onStart} disabled={files.length === 0} className="w-full py-4 bg-primary text-black font-black uppercase tracking-widest text-xs hover:bg-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                 <PlayIcon className="w-4 h-4" /> {hasMultiple ? `PROCESS ALL (${files.length})` : 'START'}
+                 <PlayIcon className="w-4 h-4" /> {hasMultiple ? t('video_lab.process_all', { count: files.length }) : t('video_lab.process_all', { count: '' }).split('(')[0].trim()}
                </button>
             )}
          </div>
