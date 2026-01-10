@@ -1,49 +1,76 @@
 import React, { useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { open } from '@tauri-apps/plugin-dialog';
+import { PlusIcon, CloudArrowUpIcon, FolderOpenIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
 
-export const UploadZone = ({ onDropFiles }) => {
-  const onDrop = useCallback(acceptedFiles => {
-    if (acceptedFiles?.length) {
-      const mapped = acceptedFiles.map(f => ({
-        file: f,
-        path: f.path || f.name, 
-        name: f.name,
-        preview: URL.createObjectURL(f)
-      }));
-      onDropFiles(mapped);
+export const UploadZone = ({ onDropFiles, minimal = false }) => {
+  
+  const handleOpenDialog = useCallback(async () => {
+    try {
+      const selected = await open({
+        multiple: true,
+        filters: [
+          { name: 'Media', extensions: ['png', 'jpg', 'jpeg', 'webp', 'mp4', 'mkv', 'avi', 'mov', 'webm'] }
+        ]
+      });
+      
+      if (selected) {
+        // selected is an array of file paths (strings) or a single path
+        const paths = Array.isArray(selected) ? selected : [selected];
+        
+        const mapped = paths.map(p => ({
+          file: null,
+          path: p,
+          name: p.split(/[/\\]/).pop(), // Get filename from path
+          preview: null // We can't create object URLs for local paths easily, will handle in preview component
+        }));
+        
+        onDropFiles(mapped);
+      }
+    } catch (err) {
+      console.error('Dialog error:', err);
     }
   }, [onDropFiles]);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
+  if (minimal) {
+    return (
+      <button 
+        onClick={handleOpenDialog}
+        className={clsx(
+          "h-12 w-full border border-dashed border-white/20 hover:border-primary/50 flex items-center justify-center cursor-pointer transition-colors bg-white/5 hover:bg-white/10 text-gray-500 hover:text-primary"
+        )}
+      >
+        <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+           <PlusIcon className="w-3 h-3" /> Add Files
+        </span>
+      </button>
+    )
+  }
 
   return (
-    <motion.div
-      {...getRootProps()}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+    <motion.button
+      onClick={handleOpenDialog}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
       className={clsx(
-        "group h-32 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 relative overflow-hidden",
-        isDragActive 
-          ? "border-primary bg-primary/5" 
-          : "border-white/10 hover:border-primary/40 hover:bg-white/5 shadow-inner"
+        "group h-40 w-full rounded-sm border border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 relative overflow-hidden bg-black",
+        "border-white/10 hover:border-white/30 hover:bg-white/5"
       )}
     >
-      <input {...getInputProps()} />
-      
-      {/* Background Glow */}
-      <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-colors duration-500" />
-      
-      <div className="relative z-10 flex flex-col items-center gap-2">
-        <div className="p-2 bg-white/5 rounded-full border border-white/10 group-hover:border-primary/50 transition-colors">
-           <PlusIcon className={clsx("w-5 h-5", isDragActive ? "text-primary" : "text-gray-500")} />
+      <div className="relative z-10 flex flex-col items-center gap-4">
+        <div className="p-3 bg-panel rounded-full border border-white/10 group-hover:border-primary/50 transition-colors shadow-2xl">
+           <FolderOpenIcon className="w-6 h-6 text-gray-400 group-hover:text-primary transition-colors" />
         </div>
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 group-hover:text-primary transition-colors">
-          Inject Media
-        </p>
+        <div className="text-center">
+          <p className="text-xs font-bold uppercase tracking-widest text-white group-hover:text-primary transition-colors">
+            Select Source Files
+          </p>
+          <p className="text-[10px] text-gray-600 font-mono mt-1">
+            PNG, JPG, MP4, MKV, AVI, WEBM
+          </p>
+        </div>
       </div>
-    </motion.div>
+    </motion.button>
   );
 };

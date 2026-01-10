@@ -1,66 +1,79 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #f97316;
+  --color-primary: #f97316; /* Fox Orange */
+  --color-primary-dim: #c2410c;
   --color-primary-glow: rgba(249, 115, 22, 0.2);
-  --color-background: #050505;
-  --color-surface: #121212;
-  --color-surface-bright: #1c1c1c;
-  --color-border: #262626;
-  --color-text-muted: #737373;
   
-  --font-sans: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  --color-bg: #000000;       /* PITCH BLACK */
+  --color-card: #050505;     /* Depth layer 1 */
+  --color-panel: #0a0a0a;    /* Depth layer 2 */
+  --color-border: #1a1a1a;   /* Subtle borders */
+  --color-border-hover: #333333;
+  
+  --color-text-main: #ffffff;
+  --color-text-dim: #888888;
+  --color-text-muted: #444444;
+  
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace; 
 }
 
-/* Global Immersive Style */
+/* Base resets */
 body {
-  background-color: var(--color-background);
-  color: #ffffff;
+  background-color: var(--color-bg);
+  color: var(--color-text-main);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
   height: 100vh;
+  margin: 0;
 }
 
-/* Glassmorphism */
-.glass {
-  background: rgba(15, 15, 15, 0.7);
-  backdrop-filter: blur(20px);
-  border-right: 1px solid var(--color-border);
+/* Typography Utilities */
+.text-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  color: var(--color-text-muted);
 }
 
-/* Portal Mesh Background */
-.mesh-bg {
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(249, 115, 22, 0.05) 0px, transparent 50%);
+/* Sharp Utilities for "Brutalist" feel */
+.sharp-card {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0px; /* SHARP */
 }
 
-.glow-hover:hover {
-  box-shadow: 0 0 30px rgba(249, 115, 22, 0.1);
-  border-color: rgba(249, 115, 22, 0.3);
+.sharp-input {
+  background-color: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 0px;
+  transition: border-color 0.2s;
 }
+.sharp-input:hover { border-color: var(--color-border-hover); }
+.sharp-input:focus { border-color: var(--color-primary); outline: none; }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 4px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-primary);
-}
+/* Custom Scrollbar Thin & Sharp */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--color-bg); }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
 
 /* Animations */
-@keyframes pulse-slow {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.6; }
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-.animate-pulse-slow {
-  animation: pulse-slow 4s infinite;
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

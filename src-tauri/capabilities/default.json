@@ -8,6 +8,17 @@
   "permissions": [
     "core:default",
     "shell:allow-open",
+    "shell:allow-kill",
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        {
+          "name": "python",
+          "cmd": "python",
+          "args": true
+        }
+      ]
+    },
     {
       "identifier": "shell:allow-execute",
       "allow": [
@@ -18,6 +29,7 @@
         }
       ]
     },
-    "fs:default"
+    "fs:default",
+    "dialog:default"
   ]
 }

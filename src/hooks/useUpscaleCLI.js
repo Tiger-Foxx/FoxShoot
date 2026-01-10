@@ -10,75 +10,75 @@ export const useUpscaleCLI = () => {
   const runUpscale = useCallback(async (args, onComplete, onError) => {
     setProcessing(true);
     setProgress({ percent: 0, eta: 0, status: 'Starting...' });
-
-    // Assuming backend is at ../backend/upscale_cli.py relative to the bundle
-    // In dev: we use absolute path or relative to CWD. 
-    // Ideally we'd use a compiled binary sidecar, but for flexibility we call python directly.
-    // We assume 'python' is in PATH.
     
     try {
-      // Absolute path for Dev Mode (Guaranteed to work)
-      // In production, this should be resource-bundled or sidecar-bundled.
       const scriptPath = 'C:\\Users\\donfa\\Desktop\\Fox\\QUALITY-SHOOT-V2\\backend\\upscale_cli.py'; 
+
+      console.log('Running python with args:', [scriptPath, ...args, '--progress', 'json']);
 
       const command = Command.create('python', [
         scriptPath, 
         ...args,
-        '--progress', 'json' // Force JSON output
+        '--progress', 'json'
       ]);
 
+      // Listen to stdout
       command.stdout.on('data', (line) => {
+        console.log('STDOUT:', line);
         try {
-          // Lines might contain multiple JSONs or partials, but usually flush=True handles it.
-          // Support multiple lines in one chunk
           const lines = line.split('\n').filter(Boolean);
           lines.forEach(l => {
-             try {
-               const data = JSON.parse(l);
-               if (data.percent !== undefined) {
-                 setProgress({
-                   percent: data.percent,
-                   eta: data.eta_seconds,
-                   status: data.status || 'Processing...'
-                 });
-               }
-               if (data.error) {
-                 toast.error(`Error: ${data.error}`);
-               }
-             } catch (e) {
-               // Ignore non-json lines
-               // console.log("Stdout:", l);
-             }
+            try {
+              const data = JSON.parse(l);
+              if (data.percent !== undefined) {
+                setProgress({
+                  percent: data.percent,
+                  eta: data.eta_seconds || 0,
+                  status: data.status || 'Processing...'
+                });
+              }
+              if (data.error) {
+                toast.error(`Backend: ${data.error}`);
+              }
+            } catch (e) {
+              if (l.trim()) console.log('Backend:', l);
+            }
           });
         } catch (e) {
           console.error("Parse error:", e);
         }
       });
 
+      // Listen to stderr
       command.stderr.on('data', (line) => {
         console.error('STDERR:', line);
-        // Sometimes valid logs go to stderr, but we can check keywords
-        if (line.includes('Error') || line.includes('Traceback')) {
-           toast.error('Backend Error: Check console');
-        }
       });
 
-      const child = await command.spawn();
-      childProcessRef.current = child;
-
-      const output = await command.execute(); // Wait for finish
+      // Execute and wait for completion (this is the correct V2 way)
+      const output = await command.execute();
       
+      console.log('Process finished. Code:', output.code);
+      console.log('STDOUT full:', output.stdout);
+      console.log('STDERR full:', output.stderr);
+
       if (output.code === 0) {
         setProgress({ percent: 100, eta: 0, status: 'Done!' });
         toast.success("Upscaling Completed!");
         if (onComplete) onComplete();
       } else {
-        toast.error(`Process failed with code ${output.code}`);
+        toast.error(`Process failed (code ${output.code})`);
+        if (output.stderr) {
+          console.error('Error details:', output.stderr);
+          // Show first meaningful line
+          const errorLine = output.stderr.split('\n').find(l => l.includes('Error') || l.includes('Exception') || l.trim());
+          if (errorLine) toast.error(errorLine.substring(0, 120));
+        }
         if (onError) onError();
       }
+
     } catch (err) {
       console.error("Launch error:", err);
-      toast.error("Failed to launch upscaler");
+      toast.error(`Failed to launch: ${err.message || err}`);
       if (onError) onError(err);
     } finally {
       setProcessing(false);
