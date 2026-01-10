@@ -3,6 +3,7 @@ import { Command } from '@tauri-apps/plugin-shell';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { getBackendConfig, buildCommandArgs, isDev } from '../utils/backendConfig';
+import { notifyFileComplete } from '../utils/notifications';
 
 export const useUpscaleCLI = () => {
   const [processing, setProcessing] = useState(false);
@@ -19,7 +20,7 @@ export const useUpscaleCLI = () => {
     });
   }, []);
 
-  const runUpscale = useCallback(async (args, onComplete, onError) => {
+  const runUpscale = useCallback(async (args, onComplete, onError, fileName = null, fileType = 'image') => {
     setProcessing(true);
     setProgress({ percent: 0, eta: 0, status: 'Starting...' });
     
@@ -97,6 +98,12 @@ export const useUpscaleCLI = () => {
           if (data.code === 0) {
             setProgress({ percent: 100, eta: 0, status: t('common.complete') });
             toast.success(t('common.output_ready'));
+            
+            // Send desktop notification
+            if (fileName) {
+              notifyFileComplete(fileName, fileType);
+            }
+            
             if (onComplete) onComplete();
             resolve();
           } else {

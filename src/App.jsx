@@ -77,43 +77,61 @@ function AppContent() {
   // Track if we should auto-start processing (from CLI --enhance)
   const [autoStartEnhance, setAutoStartEnhance] = useState(false);
 
-  // Listen for 'enhance-file' event from Tauri (Windows context menu integration)
+  // Listen for 'enhance-files' event from Tauri (Windows context menu integration)
+  // Supports both single and multiple file selection
   useEffect(() => {
     let unlisten;
     
     const setup = async () => {
-      unlisten = await listen('enhance-file', (event) => {
-        const filePath = event.payload;
-        console.log('Received enhance-file event:', filePath);
+      unlisten = await listen('enhance-files', (event) => {
+        const filePaths = Array.isArray(event.payload) ? event.payload : [event.payload];
+        console.log('Received enhance-files event:', filePaths);
         
-        if (!filePath) return;
+        if (!filePaths || filePaths.length === 0) return;
         
-        // Create file object
-        const fileName = filePath.split(/[/\\]/).pop();
-        const fileType = getFileType(fileName);
+        const imageFileObjs = [];
+        const videoFileObjs = [];
         
-        const fileObj = {
-          file: null,
-          path: filePath,
-          name: fileName,
-          preview: null
-        };
+        // Process each file path
+        filePaths.forEach(filePath => {
+          if (!filePath) return;
+          
+          const fileName = filePath.split(/[/\\]/).pop();
+          const fileType = getFileType(fileName);
+          
+          const fileObj = {
+            file: null,
+            path: filePath,
+            name: fileName,
+            preview: null
+          };
+          
+          if (fileType === 'video') {
+            videoFileObjs.push(fileObj);
+          } else {
+            imageFileObjs.push(fileObj);
+          }
+        });
         
-        // Add to appropriate queue and switch mode
-        if (fileType === 'video') {
-          setVideoFiles([fileObj]); // Replace queue with just this file
-          setVideoProcessedFiles({});
-          setMode('video');
-        } else {
-          setImageFiles([fileObj]); // Replace queue with just this file
+        // Add files to appropriate queues
+        if (imageFileObjs.length > 0) {
+          setImageFiles(imageFileObjs);
           setImageProcessedFiles({});
           setMode('image');
+          toast.success(`🦊 ${imageFileObjs.length} image${imageFileObjs.length > 1 ? 's' : ''} added`);
+        }
+        
+        if (videoFileObjs.length > 0) {
+          setVideoFiles(videoFileObjs);
+          setVideoProcessedFiles({});
+          if (imageFileObjs.length === 0) {
+            setMode('video');
+          }
+          toast.success(`🦊 ${videoFileObjs.length} video${videoFileObjs.length > 1 ? 's' : ''} added`);
         }
         
         // Mark that we should auto-start
         setAutoStartEnhance(true);
-        
-        toast.success(`🦊 ${fileName} - Enhancement starting...`);
       });
     };
     
