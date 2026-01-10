@@ -174,7 +174,11 @@ function AppContent() {
            {mode === 'video' && (
              <motion.div key="video" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                <VideoLab 
-                 file={files[0]}
+                 files={files}
+                 processedFiles={processedFiles}
+                 currentIndex={currentFileIndex}
+                 onDrop={handleDropFiles}
+                 onRemove={handleRemove}
                  onStart={processQueue}
                  onStop={cancelUpscale}
                  progress={progress}
@@ -182,14 +186,6 @@ function AppContent() {
                  options={options}
                  setOptions={setOptions}
                />
-               
-               {files.length === 0 && (
-                   <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center">
-                      <div className="w-96">
-                          <UploadZone onDropFiles={handleDropFiles} />
-                      </div>
-                   </div>
-               )}
              </motion.div>
            )}
 

@@ -14,12 +14,12 @@
       {
         "title": "Fox-Shoot : improve your vision",
         "label": "main",
-        "width": 1024,
-        "height": 768,
+        "width": 1230,
+        "height": 850,
         "resizable": true,
         "fullscreen": false,
-        "minWidth": 800,
-        "minHeight": 600,
+        "minWidth": 850,
+        "minHeight": 650,
         "visible": true
       }
     ],
