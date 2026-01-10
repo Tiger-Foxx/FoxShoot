@@ -3,10 +3,12 @@ import { ComparisonView } from './ComparisonView';
 import { UploadZone } from './UploadZone';
 import { TrashIcon, FolderOpenIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-shell';
 import clsx from 'clsx';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
 
-export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processing, onStart, options, setOptions }) => {
+export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processing, progress, onStart, options, setOptions }) => {
   const [activeFileIndex, setActiveFileIndex] = useState(0);
   const activeFile = files[activeFileIndex];
   
@@ -19,11 +21,22 @@ export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processin
     toast.success('Path copied to clipboard!');
   };
 
+  const openOutputFolder = async (path) => {
+    try {
+      // Get folder path from file path
+      const folderPath = path.split('\\').slice(0, -1).join('\\');
+      await open(folderPath);
+    } catch (err) {
+      console.error('Failed to open folder:', err);
+      toast.error('Failed to open folder');
+    }
+  };
+
   return (
     <div className="flex h-full">
       
       {/* SIDEBAR TOOLS */}
-      <div className="w-80 bg-panel border-r border-white/5 flex flex-col p-4 gap-6 z-10">
+      <div className="w-80 bg-panel border-r border-white/5 flex flex-col p-4 gap-4 z-10">
          <div className="space-y-1 pb-4 border-b border-white/5">
             <h2 className="text-lg font-black text-white uppercase tracking-tighter">Image Studio</h2>
             <p className="text-xs text-gray-600 font-mono">Pixel Perfect Restoration</p>
@@ -50,6 +63,39 @@ export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processin
                </div>
             </div>
          </div>
+
+         {/* PROGRESS DISPLAY (when processing) */}
+         {processing && progress && (
+           <div className="p-3 bg-primary/5 border border-primary/20 space-y-3">
+             <div className="flex justify-between items-end">
+               <div>
+                 <div className="text-[10px] text-primary font-bold uppercase tracking-widest">Processing</div>
+                 <div className="text-xs text-gray-400 font-mono truncate max-w-[180px]">{progress.status}</div>
+               </div>
+               <div className="text-right">
+                 <div className="text-2xl font-black text-white tabular-nums">
+                   {progress.percent.toFixed(1)}<span className="text-primary text-sm">%</span>
+                 </div>
+               </div>
+             </div>
+             
+             {/* Progress Bar */}
+             <div className="h-1.5 bg-black/50 rounded-full overflow-hidden">
+               <motion.div 
+                 className="h-full bg-primary"
+                 initial={{ width: 0 }}
+                 animate={{ width: `${progress.percent}%` }}
+                 transition={{ duration: 0.3 }}
+               />
+             </div>
+             
+             {progress.eta > 0 && (
+               <div className="text-[10px] text-gray-500 font-mono text-right">
+                 ETA: {Math.round(progress.eta)}s
+               </div>
+             )}
+           </div>
+         )}
 
          {/* QUEUE LIST */}
          <div className="flex-1 flex flex-col min-h-0 bg-black/20 border border-white/5">
@@ -88,16 +134,23 @@ export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processin
 
          {/* OUTPUT INFO */}
          {processedFiles[activeFileIndex] && (
-           <div 
-             onClick={() => copyOutputPath(processedFiles[activeFileIndex])}
-             className="p-3 bg-green-500/10 border border-green-500/30 cursor-pointer hover:bg-green-500/20 transition-colors"
-           >
-             <div className="text-[10px] text-green-400 font-bold uppercase mb-1 flex items-center gap-1">
-               <FolderOpenIcon className="w-3 h-3" /> Output Saved
+           <div className="space-y-2">
+             <div 
+               onClick={() => copyOutputPath(processedFiles[activeFileIndex])}
+               className="p-3 bg-green-500/10 border border-green-500/30 cursor-pointer hover:bg-green-500/20 transition-colors"
+             >
+               <div className="text-[10px] text-green-400 font-bold uppercase mb-1">Output Saved</div>
+               <div className="text-[9px] text-green-300/70 font-mono truncate">
+                 {processedFiles[activeFileIndex]}
+               </div>
              </div>
-             <div className="text-[9px] text-green-300/70 font-mono truncate">
-               {processedFiles[activeFileIndex]}
-             </div>
+             <button 
+               onClick={() => openOutputFolder(processedFiles[activeFileIndex])}
+               className="w-full py-2 flex items-center justify-center gap-2 text-[10px] font-bold uppercase border border-white/10 hover:border-primary/50 hover:text-primary transition-colors"
+             >
+               <FolderOpenIcon className="w-4 h-4" />
+               Open Folder
+             </button>
            </div>
          )}
 
