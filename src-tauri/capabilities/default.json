@@ -14,6 +14,11 @@
           "name": "python",
           "cmd": "python",
           "args": true
+        },
+        {
+          "name": "cmd",
+          "cmd": "cmd",
+          "args": true
         }
       ]
     },
@@ -23,6 +28,11 @@
         {
           "name": "python",
           "cmd": "python",
+          "args": true
+        },
+        {
+          "name": "cmd",
+          "cmd": "cmd",
           "args": true
         }
       ]

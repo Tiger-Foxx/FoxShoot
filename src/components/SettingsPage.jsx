@@ -49,26 +49,46 @@ export const SettingsPage = ({ onBack }) => {
         <div className="space-y-8">
           
           {/* OUTPUT FOLDER */}
-          <SettingSection title="Output Folder" description="Where processed files will be saved. Leave empty to save next to source file.">
-            <div className="flex gap-2">
-              <div className="flex-1 bg-panel border border-white/10 p-3 font-mono text-sm text-gray-400 truncate">
-                {settings.outputFolder || '(Same as source file)'}
+          <SettingSection title="Output Folder" description="Where processed files will be saved.">
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <div className="flex-1 bg-panel border border-white/10 p-3 font-mono text-sm text-gray-400 truncate">
+                  {settings.outputFolder || '📁 Same as source file (default)'}
+                </div>
+                <button 
+                  onClick={handleSelectOutputFolder}
+                  className="px-4 py-3 bg-white/5 border border-white/10 hover:border-primary/50 hover:bg-primary/10 transition-colors"
+                  title="Choose folder"
+                >
+                  <FolderOpenIcon className="w-5 h-5" />
+                </button>
               </div>
-              <button 
-                onClick={handleSelectOutputFolder}
-                className="px-4 py-3 bg-white/5 border border-white/10 hover:border-primary/50 hover:bg-primary/10 transition-colors"
-              >
-                <FolderOpenIcon className="w-5 h-5" />
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => {
+                    updateSetting('outputFolder', '');
+                    toast.success('Output will be saved next to source file');
+                  }}
+                  className={`flex-1 py-2 text-xs font-bold border transition-colors ${
+                    !settings.outputFolder 
+                      ? 'bg-primary/20 text-primary border-primary/30' 
+                      : 'border-white/10 text-gray-500 hover:border-white/30'
+                  }`}
+                >
+                  Same as Source
+                </button>
+                <button 
+                  onClick={handleSelectOutputFolder}
+                  className={`flex-1 py-2 text-xs font-bold border transition-colors ${
+                    settings.outputFolder 
+                      ? 'bg-primary/20 text-primary border-primary/30' 
+                      : 'border-white/10 text-gray-500 hover:border-white/30'
+                  }`}
+                >
+                  Custom Folder
+                </button>
+              </div>
             </div>
-            {settings.outputFolder && (
-              <button 
-                onClick={() => updateSetting('outputFolder', '')}
-                className="text-xs text-gray-500 hover:text-red-400 mt-2"
-              >
-                Clear (use source folder)
-              </button>
-            )}
           </SettingSection>
 
           {/* DEFAULT SCALE */}

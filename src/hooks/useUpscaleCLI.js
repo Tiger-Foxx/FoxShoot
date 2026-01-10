@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 export const useUpscaleCLI = () => {
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState({ percent: 0, eta: 0, status: 'Idle' });
-  const childProcessRef = useRef(null);
+  const childRef = useRef(null);
 
   const runUpscale = useCallback(async (args, onComplete, onError) => {
     setProcessing(true);
@@ -22,15 +22,18 @@ export const useUpscaleCLI = () => {
         '--progress', 'json'
       ]);
 
-      // Listen to stdout
+      let stderrBuffer = '';
+
+      // Setup stdout listener BEFORE spawning - THIS IS THE KEY FOR STREAMING
       command.stdout.on('data', (line) => {
-        console.log('STDOUT:', line);
+        console.log('STDOUT chunk:', line);
         try {
           const lines = line.split('\n').filter(Boolean);
           lines.forEach(l => {
             try {
               const data = JSON.parse(l);
               if (data.percent !== undefined) {
+                console.log('Progress update:', data.percent);
                 setProgress({
                   percent: data.percent,
                   eta: data.eta_seconds || 0,
@@ -41,7 +44,10 @@ export const useUpscaleCLI = () => {
                 toast.error(`Backend: ${data.error}`);
               }
             } catch (e) {
-              if (l.trim()) console.log('Backend:', l);
+              // Non-JSON line
+              if (l.trim() && !l.startsWith('Processing')) {
+                console.log('Backend:', l);
+              }
             }
           });
         } catch (e) {
@@ -49,46 +55,63 @@ export const useUpscaleCLI = () => {
         }
       });
 
-      // Listen to stderr
+      // Setup stderr listener
       command.stderr.on('data', (line) => {
         console.error('STDERR:', line);
+        stderrBuffer += line + '\n';
       });
 
-      // Execute and wait for completion (this is the correct V2 way)
-      const output = await command.execute();
-      
-      console.log('Process finished. Code:', output.code);
-      console.log('STDOUT full:', output.stdout);
-      console.log('STDERR full:', output.stderr);
+      // Spawn the process (non-blocking)
+      const child = await command.spawn();
+      childRef.current = child;
+      console.log('Process spawned, pid:', child.pid);
 
-      if (output.code === 0) {
-        setProgress({ percent: 100, eta: 0, status: 'Done!' });
-        toast.success("Upscaling Completed!");
-        if (onComplete) onComplete();
-      } else {
-        toast.error(`Process failed (code ${output.code})`);
-        if (output.stderr) {
-          console.error('Error details:', output.stderr);
-          // Show first meaningful line
-          const errorLine = output.stderr.split('\n').find(l => l.includes('Error') || l.includes('Exception') || l.trim());
-          if (errorLine) toast.error(errorLine.substring(0, 120));
-        }
-        if (onError) onError();
-      }
+      // Wait for process to complete using a promise
+      return new Promise((resolve, reject) => {
+        command.on('close', (data) => {
+          console.log('Process closed with code:', data.code);
+          childRef.current = null;
+          setProcessing(false);
+          
+          if (data.code === 0) {
+            setProgress({ percent: 100, eta: 0, status: 'Done!' });
+            toast.success("Upscaling Completed!");
+            if (onComplete) onComplete();
+            resolve();
+          } else {
+            console.error('Process failed. STDERR:', stderrBuffer);
+            toast.error(`Process failed (code ${data.code})`);
+            if (stderrBuffer) {
+              const firstError = stderrBuffer.split('\n').find(l => l.includes('Error') || l.includes('Exception')) || stderrBuffer.split('\n')[0];
+              if (firstError) toast.error(firstError.substring(0, 100));
+            }
+            if (onError) onError();
+            reject(new Error(`Exit code ${data.code}`));
+          }
+        });
+
+        command.on('error', (error) => {
+          console.error('Process error:', error);
+          toast.error(`Process error: ${error}`);
+          setProcessing(false);
+          childRef.current = null;
+          if (onError) onError(error);
+          reject(error);
+        });
+      });
 
     } catch (err) {
       console.error("Launch error:", err);
       toast.error(`Failed to launch: ${err.message || err}`);
-      if (onError) onError(err);
-    } finally {
       setProcessing(false);
-      childProcessRef.current = null;
+      if (onError) onError(err);
+      throw err;
     }
   }, []);
 
   const cancelUpscale = useCallback(async () => {
-    if (childProcessRef.current) {
-      await childProcessRef.current.kill();
+    if (childRef.current) {
+      await childRef.current.kill();
       toast('Operation Cancelled', { icon: '🛑' });
       setProcessing(false);
       setProgress({ percent: 0, eta: 0, status: 'Cancelled' });

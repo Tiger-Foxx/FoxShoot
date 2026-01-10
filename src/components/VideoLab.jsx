@@ -24,9 +24,13 @@ export const VideoLab = ({
         <div className="flex-1 bg-black border border-white/10 relative overflow-hidden group">
             <div className="absolute inset-0 flex items-center justify-center">
                 {file ? (
-                   <img 
-                      src={file.preview} 
-                      className="w-full h-full object-contain opacity-50 grayscale group-hover:grayscale-0 transition-all duration-500" 
+                   <video 
+                      src={convertFileSrc(file.path)} 
+                      className="w-full h-full object-contain opacity-70 group-hover:opacity-100 transition-all duration-500" 
+                      muted
+                      loop
+                      autoPlay
+                      playsInline
                    />
                 ) : (
                    <div className="text-gray-700 font-mono text-xs tracking-widest">NO SIGNAL INPUT</div>
@@ -45,7 +49,7 @@ export const VideoLab = ({
             {/* OVERLAYS */}
             <div className="absolute top-4 left-4 flex flex-col gap-1">
                <div className="text-[10px] bg-black/80 border border-white/20 text-primary px-2 py-0.5 font-bold font-mono">
-                  {processing ? "● LIVE FEED" : "○ STANDBY"}
+                  {processing ? "● ENCODING" : "○ STANDBY"}
                </div>
                {file && <div className="text-[10px] text-gray-400 font-mono pl-1">{file.name}</div>}
             </div>

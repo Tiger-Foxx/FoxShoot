@@ -3,7 +3,7 @@ import { ComparisonView } from './ComparisonView';
 import { UploadZone } from './UploadZone';
 import { TrashIcon, FolderOpenIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { convertFileSrc } from '@tauri-apps/api/core';
-import { open } from '@tauri-apps/plugin-shell';
+import { Command } from '@tauri-apps/plugin-shell';
 import clsx from 'clsx';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
@@ -21,11 +21,13 @@ export const ImageStudio = ({ files, onDrop, onRemove, processedFiles, processin
     toast.success('Path copied to clipboard!');
   };
 
-  const openOutputFolder = async (path) => {
+  const openOutputFolder = async (filePath) => {
     try {
       // Get folder path from file path
-      const folderPath = path.split('\\').slice(0, -1).join('\\');
-      await open(folderPath);
+      const folderPath = filePath.split('\\').slice(0, -1).join('\\');
+      // Use explorer.exe to open folder on Windows
+      const command = Command.create('cmd', ['/c', 'explorer', folderPath]);
+      await command.execute();
     } catch (err) {
       console.error('Failed to open folder:', err);
       toast.error('Failed to open folder');

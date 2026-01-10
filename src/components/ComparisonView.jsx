@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
 
 export const ComparisonView = ({ original, processed }) => {
   const [sliderPos, setSliderPos] = useState(50);
@@ -20,7 +19,6 @@ export const ComparisonView = ({ original, processed }) => {
     if (isDragging) handleMove(e.clientX);
   };
   
-  // Touch support
   const handleTouchMove = (e) => {
     if (isDragging) handleMove(e.touches[0].clientX);
   };
@@ -45,11 +43,10 @@ export const ComparisonView = ({ original, processed }) => {
     };
   }, [isDragging, handleMove]);
 
-  // If no processed image, show original fully or a placeholder
+  // No image at all - placeholder
   if (!original) {
       return (
           <div className="w-full h-full relative overflow-hidden">
-              {/* Cinematic Background Placeholder */}
               <img 
                  src="/image2.png" 
                  alt="Placeholder" 
@@ -64,61 +61,75 @@ export const ComparisonView = ({ original, processed }) => {
                  <span className="text-[10px] font-mono text-gray-500 uppercase tracking-[0.3em]">
                     Awaiting Visual Input
                  </span>
-                 <span className="text-[9px] font-mono text-gray-700 mt-2">
-                    Drop an image or select from the queue
-                 </span>
               </div>
           </div>
       )
   }
 
+  // Only original, not yet processed
   if (!processed) {
-      // Just show original
       return (
-          <div className="w-full h-full flex items-center justify-center bg-black relative overflow-hidden">
-               <img src={original} className="max-w-full max-h-full object-contain" />
-               <div className="absolute top-4 left-4 bg-black/50 px-2 py-1 text-[10px] text-white border border-white/10">ORIGINAL SOURCE</div>
+          <div className="w-full h-full bg-black relative overflow-hidden">
+               <img src={original} className="absolute inset-0 w-full h-full object-contain" />
+               <div className="absolute top-4 left-4 bg-black/70 px-2 py-1 text-[10px] font-bold text-white border border-white/20 z-10">
+                 SOURCE
+               </div>
           </div>
       )
   }
 
+  // COMPARISON MODE - Both images MUST have identical visual size
+  // Key: Both images are absolutely positioned with w-full h-full object-contain
+  // This ensures they occupy the exact same rendered space regardless of source resolution
+
   return (
     <div 
-      className="relative w-full h-full bg-black select-none overflow-hidden cursor-ew-resize group"
+      className="relative w-full h-full bg-black select-none overflow-hidden cursor-ew-resize"
       ref={containerRef}
       onMouseDown={(e) => { handleMouseDown(); handleMove(e.clientX); }}
       onTouchStart={(e) => { handleMouseDown(); handleMove(e.touches[0].clientX); }}
     >
-        {/* UNDERLAY (Original) */}
-        <div className="absolute inset-0 flex items-center justify-center">
-            <img 
-               src={original} 
-               className="max-w-full max-h-full object-contain pointer-events-none" 
-               draggable={false}
-            />
-             <div className="absolute top-4 left-4 bg-black/60 px-2 py-1 text-[10px] font-bold text-gray-400 border border-white/10">ORIGINAL</div>
+        {/* ORIGINAL IMAGE - Full container, visible left of slider */}
+        <div 
+          className="absolute inset-0"
+          style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
+        >
+          <img 
+            src={original} 
+            className="w-full h-full object-contain pointer-events-none" 
+            draggable={false}
+          />
         </div>
 
-        {/* OVERLAY (Processed) - Clipped */}
+        {/* ENHANCED IMAGE - Full container, visible right of slider */}
         <div 
-           className="absolute inset-0 flex items-center justify-center"
-           style={{ clipPath: `inset(0 0 0 ${sliderPos}%)` }}
+          className="absolute inset-0"
+          style={{ clipPath: `inset(0 0 0 ${sliderPos}%)` }}
         >
-             <img 
-               src={processed} 
-               className="max-w-full max-h-full object-contain pointer-events-none brightness-110 contrast-105" // Added filters to fake "better" look if same img
-               draggable={false}
-            />
-            <div className="absolute top-4 right-4 bg-primary/20 px-2 py-1 text-[10px] font-bold text-primary border border-primary/30">ENHANCED 4K</div>
+          <img 
+            src={processed} 
+            className="w-full h-full object-contain pointer-events-none"
+            draggable={false}
+          />
+        </div>
+
+        {/* LABELS */}
+        <div className="absolute top-4 left-4 bg-black/80 backdrop-blur-sm px-3 py-1.5 text-[10px] font-bold text-gray-300 border border-white/10 z-20 uppercase tracking-wider">
+          Original
+        </div>
+        <div className="absolute top-4 right-4 bg-primary/90 backdrop-blur-sm px-3 py-1.5 text-[10px] font-bold text-black border border-primary z-20 uppercase tracking-wider">
+          Enhanced
         </div>
 
         {/* SLIDER HANDLE */}
         <div 
-           className="absolute top-0 bottom-0 w-0.5 bg-primary cursor-ew-resize z-10"
-           style={{ left: `${sliderPos}%` }}
+           className="absolute top-0 bottom-0 w-0.5 bg-primary z-30 shadow-[0_0_10px_rgba(249,115,22,0.5)]"
+           style={{ left: `${sliderPos}%`, transform: 'translateX(-50%)' }}
         >
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black border border-primary flex items-center justify-center shadow-[0_0_15px_rgba(249,115,22,0.5)]">
-                 <div className="w-1 h-3 border-l border-r border-white/50 w-2" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black border-2 border-primary flex items-center justify-center shadow-[0_0_20px_rgba(249,115,22,0.6)]">
+                 <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                   <path strokeLinecap="round" strokeLinejoin="round" d="M7 16l-4-4m0 0l4-4m-4 4h18m-4 4l4-4m0 0l-4-4" />
+                 </svg>
             </div>
         </div>
     </div>
